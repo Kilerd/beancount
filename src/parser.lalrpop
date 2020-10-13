@@ -1,0 +1,31 @@
+use std::str::FromStr;
+use crate::models::*;
+use chrono::{NaiveDate};
+use crate::error::BeanCountError;
+use lalrpop_util::ParseError;
+
+grammar;
+
+extern {
+    type Error = BeanCountError;
+}
+
+pub DirectiveExpression: Box<Directive> = {
+    OpenExpression,
+};
+pub OpenExpression: Box<Directive> = {
+    <date: DateExpression> "open" <account: AccountExpression>  => Box::new(Directive::Open(date, account))
+}
+
+
+pub AccountExpression: Account = {
+    "Assets" => Account::Assets(vec![]),
+    "Liabilities" => Account::Liabilities,
+}
+
+
+
+
+pub DateExpression: NaiveDate = {
+    <date:r"\d{4}-\d{1,2}-\d{1,2}"> =>? NaiveDate::parse_from_str(date, "%Y-%m-%d").map_err(|_|ParseError::User {error: BeanCountError::InvalidDate})
+}
