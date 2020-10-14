@@ -14,10 +14,10 @@ mod tests {
     fn it_works() {
         let directive = Box::new(Directive::Open(
             NaiveDate::from_ymd(1970, 1, 1),
-            Account::Assets(vec![]),
+            Account::Assets(vec!["123".to_owned(), "234".to_owned()]),
         ));
         let x = DirectiveExpressionParser::new()
-            .parse("1970-01-01 open Assets:")
+            .parse("1970-01-01 open Assets:123:234")
             .unwrap();
         assert_eq!(directive, x);
 
