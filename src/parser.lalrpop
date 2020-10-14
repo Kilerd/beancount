@@ -3,6 +3,7 @@ use crate::models::*;
 use chrono::{NaiveDate};
 use crate::error::BeanCountError;
 use lalrpop_util::ParseError;
+use snailquote::unescape;
 
 grammar;
 
@@ -25,15 +26,30 @@ else {
 
 pub DirectiveExpression: Box<Directive> = {
     OpenExpression,
+    NoteExpression,
 };
 pub OpenExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression>  => Box::new(Directive::Open(date, account))
 };
 
+pub NoteExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression>  => Box::new(Directive::Note(date, account, note))
+};
+
+
+
+
+
+pub StringExpression: String = {
+    <r#""(\\(["\\/bfnrt]|u[a-fA-F0-9]{4})|[^"\\\x00-\x1F\x7F]+)*""#> => unescape(<>).unwrap()
+}
 
 pub AccountExpression: Account = {
     "Assets" <v:(":" <AccountName>)+>  => Account::Assets(v),
-    "Liabilities" => Account::Liabilities,
+    "Liabilities" <v:(":" <AccountName>)+> => Account::Liabilities(v),
+    "Equity" <v:(":" <AccountName>)+> => Account::Equity(v),
+    "Income" <v:(":" <AccountName>)+> => Account::Income(v),
+    "Expenses" <v:(":" <AccountName>)+> => Account::Expenses(v),
 };
 
 

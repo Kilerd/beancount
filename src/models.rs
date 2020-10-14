@@ -10,7 +10,7 @@ pub enum Directive {
     Balance,
     Tag,
     Pad,
-    Note,
+    Note(NaiveDate, Account, String),
     Document,
     Price,
     Event,
@@ -20,8 +20,9 @@ pub enum Directive {
 #[derive(Debug, EnumString, PartialEq)]
 pub enum Account {
     Assets(Vec<String>),
-    Liabilities,
-    Equity,
-    Income,
-    Expenses,
+    Liabilities(Vec<String>),
+    Equity(Vec<String>),
+    Income(Vec<String>),
+    Expenses(Vec<String>),
 }
+

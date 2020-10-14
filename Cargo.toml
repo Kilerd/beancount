@@ -13,6 +13,7 @@ regex = "1"
 chrono = "0.4.19"
 strum = { version = "0.19", features = ["derive"] }
 strum_macros = "0.19.4"
+snailquote = "0.3.0"
 
 [build-dependencies]
 lalrpop = {git="https://github.com/lalrpop/lalrpop", features=["lexer"]}
