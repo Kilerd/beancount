@@ -2,7 +2,7 @@ use lalrpop_util::lalrpop_mod;
 
 pub mod error;
 pub mod models;
-lalrpop_mod!(pub parser);
+lalrpop_mod!(#[allow(clippy::all)] pub parser);
 
 #[cfg(test)]
 mod tests {
