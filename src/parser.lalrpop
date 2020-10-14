@@ -17,6 +17,8 @@ match {
     r"///[^\n\r]*[\n\r]*" => { },
 
     r"\d{4}-\d{1,2}-\d{1,2}",
+
+
     r"[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"
 } else {
     // Other things you want to match
@@ -38,17 +40,33 @@ Comma<T>: Vec<T> = { // (1)
 pub DirectiveExpression: Box<Directive> = {
     OpenExpression,
     NoteExpression,
+    CloseExpression,
+    CommodityExpression,
 };
 pub OpenExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Box::new(Directive::Open(date, account, commodities))
 };
 
 pub NoteExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression>  => Box::new(Directive::Note(date, account, note))
+    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Note(date, account, note))
 };
 
+pub CloseExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Box::new(Directive::Close(date, account))
+};
+
+pub CommodityExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "commodity" SPACE+ <commodity: Commodity> SPACE*
+      <v:("\n" SPACE SPACE+ <AttributeKey> SPACE* ":" SPACE* <StringExpression>)*>
+
+      => Box::new(Directive::Commodity(date, commodity,  v.into_iter().collect()))
+}
 
 
+
+pub AttributeKey: String = {
+    AccountName
+}
 
 
 pub StringExpression: String = {
