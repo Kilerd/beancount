@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 use strum_macros::EnumString;
 #[derive(Debug, PartialEq)]
 pub enum Directive {
-    Open(NaiveDate, Account),
+    Open(NaiveDate, Account, Option<Vec<String>>),
     Close,
     Commodity,
     Transaction,

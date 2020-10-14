@@ -16,7 +16,8 @@ match {
     // Ignore C++-style comments
     r"///[^\n\r]*[\n\r]*" => { },
 
-    r"\d{4}-\d{1,2}-\d{1,2}"
+    r"\d{4}-\d{1,2}-\d{1,2}",
+    r"[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"
 } else {
     // Other things you want to match
 }
@@ -24,12 +25,22 @@ else {
     _ // Everything else
 }
 
+Comma<T>: Vec<T> = { // (1)
+    <v:(<T> "," SPACE*)*> <e:T> => { // (2)
+        let mut v = v;
+        v.push(e);
+        v
+    }
+};
+
+
+
 pub DirectiveExpression: Box<Directive> = {
     OpenExpression,
     NoteExpression,
 };
 pub OpenExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression>  => Box::new(Directive::Open(date, account))
+    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Box::new(Directive::Open(date, account, commodities))
 };
 
 pub NoteExpression: Box<Directive> = {
@@ -57,6 +68,11 @@ pub AccountName: String = {
     <r"(([^\x00-\x9F])|([A-Za-z0-9-]))+"> => <>.to_owned()
 }
 
+
+
+pub Commodity: String = {
+    <r"[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"> => <>.to_owned()
+}
 
 
 pub DateExpression: NaiveDate = {
