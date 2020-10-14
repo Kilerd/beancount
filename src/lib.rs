@@ -21,7 +21,6 @@ mod tests {
             .unwrap();
         assert_eq!(directive, x);
 
-
         let x = DirectiveExpressionParser::new()
             .parse("1970-01-01")
             .is_err();
