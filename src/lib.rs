@@ -14,16 +14,18 @@ mod tests {
     fn it_works() {
         let directive = Box::new(Directive::Open(
             NaiveDate::from_ymd(1970, 1, 1),
-            Account::Assets(vec!["123".to_owned(), "234".to_owned()]),
+            Account::Assets(vec![
+                "123".to_owned(),
+                "234".to_owned(),
+                "English".to_owned(),
+                "中文".to_owned(),
+                "日本語".to_owned(),
+                "한국어".to_owned(),
+            ]),
         ));
         let x = DirectiveExpressionParser::new()
-            .parse("1970-01-01 open Assets:123:234")
+            .parse("1970-01-01 open Assets:123:234:English:中文:日本語:한국어")
             .unwrap();
         assert_eq!(directive, x);
-
-        let x = DirectiveExpressionParser::new()
-            .parse("1970-01-01")
-            .is_err();
-        assert_eq!(true, x);
     }
 }

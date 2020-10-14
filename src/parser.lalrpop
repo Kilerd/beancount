@@ -38,7 +38,7 @@ pub AccountExpression: Account = {
 
 
 pub AccountName: String = {
-    <r"[A-Za-z0-9-]+"> => <>.to_owned()
+    <r"(([^\x00-\x9F])|([A-Za-z0-9-]))+"> => <>.to_owned()
 }
 
 
@@ -48,5 +48,6 @@ pub DateExpression: NaiveDate = {
 }
 
 pub SPACE = {
-    r"\s"
+    " ",
+    r"\t"
 }
