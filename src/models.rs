@@ -25,4 +25,3 @@ pub enum Account {
     Income(Vec<String>),
     Expenses(Vec<String>),
 }
-
