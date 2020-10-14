@@ -25,4 +25,3 @@ pub enum Account {
     Income,
     Expenses,
 }
-

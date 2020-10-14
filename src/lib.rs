@@ -12,7 +12,10 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let directive = Box::new(Directive::Open(NaiveDate::from_ymd(1970, 1, 1), (Account::Assets(vec![]))));
+        let directive = Box::new(Directive::Open(
+            NaiveDate::from_ymd(1970, 1, 1),
+            (Account::Assets(vec![])),
+        ));
         let x = DirectiveExpressionParser::new()
             .parse("1970-01-01 open Assets:")
             .unwrap();
