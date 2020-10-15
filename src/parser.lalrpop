@@ -86,8 +86,8 @@ pub CommodityExpression: Box<Directive> = {
 }
 
 pub TransactionExpression: Transaction = {
-    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression>  <(SPACE* ("|" SPACE+)? <StringExpression>)?>)?>
-    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <(SPACE+ <Amount>)?> <(SPACE+ "@" SPACE+ <Amount>)?> <(SPACE+ "@@" SPACE+ <Amount>)?> )*>
+    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression> SPACE*  <(("|" SPACE+)? <StringExpression> SPACE*)?>)?> <tags: ("#" <AttributeKey> SPACE*)*> <links: ("^" <AttributeKey> SPACE*)*>
+    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <(SPACE+ <Amount>)?> <(SPACE+ "@" SPACE* <Amount>)?> <(SPACE+ "@@" SPACE* <Amount>)?> )*>
 
     => {
     let lines = v.into_iter().map(|line| {
@@ -96,7 +96,7 @@ pub TransactionExpression: Transaction = {
         let cost = None; // todo implement cost;
         TransactionLine{flag, account, amount, cost, single_price, total_price}
     }).collect();
-    Transaction::from_parser(date, flag, pn, lines)
+    Transaction::from_parser(date, flag, pn, tags, links, lines)
     }
 }
 

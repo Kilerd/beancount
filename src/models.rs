@@ -34,6 +34,7 @@ pub enum AccountType {
     Income,
     Expenses,
 }
+
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Account {
     account_type: AccountType,
@@ -110,6 +111,8 @@ impl Transaction {
         date: NaiveDate,
         flag: Flag,
         pn: Option<(String, Option<String>)>,
+        tags: Vec<String>,
+        links: Vec<String>,
         lines: Vec<TransactionLine>,
     ) -> Transaction {
         let (payee, narration) = match pn {
@@ -123,8 +126,8 @@ impl Transaction {
             flag,
             payee,
             narration,
-            tags: vec![],
-            links: vec![],
+            tags,
+            links,
             lines,
         }
     }
@@ -132,13 +135,13 @@ impl Transaction {
 
 #[cfg(test)]
 mod test {
-
     mod open {
         use crate::{
             models::{Account, AccountType, Directive},
             parser::DirectiveExpressionParser,
         };
         use chrono::NaiveDate;
+
         #[test]
         fn test_open_directive() {
             let directive = Box::new(Directive::Open(
@@ -161,6 +164,7 @@ mod test {
                 .unwrap();
             assert_eq!(directive, x);
         }
+
         #[test]
         fn test_open_with_commodity() {
             let directive = Box::new(Directive::Open(
@@ -183,6 +187,7 @@ mod test {
                 .unwrap();
             assert_eq!(directive, x);
         }
+
         #[test]
         fn test_open_with_commodities() {
             let directive = Box::new(Directive::Open(
@@ -213,6 +218,7 @@ mod test {
             parser::DirectiveExpressionParser,
         };
         use chrono::NaiveDate;
+
         #[test]
         fn test_close() {
             let directive = Box::new(Directive::Close(
@@ -235,6 +241,7 @@ mod test {
             parser::DirectiveExpressionParser,
         };
         use chrono::NaiveDate;
+
         #[test]
         fn test_note_directive() {
             let directive = Box::new(Directive::Note(
@@ -253,6 +260,7 @@ mod test {
         use crate::{models::Directive, parser::DirectiveExpressionParser};
         use chrono::NaiveDate;
         use indexmap::IndexMap;
+
         #[test]
         fn test_commodity_without_attribute() {
             let x = DirectiveExpressionParser::new()
@@ -285,6 +293,7 @@ mod test {
             ));
             assert_eq!(directive, x);
         }
+
         #[test]
         fn test_commodity_with_attributes() {
             let x = DirectiveExpressionParser::new()
@@ -593,6 +602,138 @@ mod test {
 
             assert_eq!(x1, x);
         }
+
+        #[test]
+        fn with_optional_tags_without_payee() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 *  "Narration" #mytag #tag2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CCC".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: Some((BigDecimal::from(1i16), "CNY".to_string())),
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: None,
+                narration: Some("Narration".to_owned()),
+                tags: vec!["mytag".to_owned(), "tag2".to_owned()],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn optional_tags() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Payee" "Narration" #mytag #tag2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CCC".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: Some((BigDecimal::from(1i16), "CNY".to_string())),
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: Some("Payee".to_owned()),
+                narration: Some("Narration".to_owned()),
+                tags: vec!["mytag".to_owned(), "tag2".to_owned()],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn optional_links() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Payee" "Narration" ^link1 ^link-2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CCC".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: Some((BigDecimal::from(1i16), "CNY".to_string())),
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: Some("Payee".to_owned()),
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec!["link1".to_owned(), "link-2".to_owned()],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
     }
 
     mod pad {
@@ -601,6 +742,7 @@ mod test {
             parser::DirectiveExpressionParser,
         };
         use chrono::NaiveDate;
+
         #[test]
         fn pad_directive() {
             let x = DirectiveExpressionParser::new()
@@ -686,6 +828,7 @@ mod test {
             parser::DirectiveExpressionParser,
         };
         use chrono::NaiveDate;
+
         #[test]
         fn empty_string() {
             let x = DirectiveExpressionParser::new()
@@ -794,6 +937,7 @@ mod test {
             assert_eq!(directive, x);
         }
     }
+
     mod include {
         use crate::{models::Directive, parser::DirectiveExpressionParser};
 

@@ -10,8 +10,8 @@
     - [x] optional single price
     - [x] optional total price
     - [ ] optional actual cost
-    - [ ] tags
-    - [ ] links
+    - [x] tags
+    - [x] links
  - [ ] push tag & pop tag
  - [x] balance directive
  - [x] pad directive
