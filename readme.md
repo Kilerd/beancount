@@ -17,3 +17,6 @@
  - [x] pad directive
  - [x] document directive
  - [x] price directive
+ - [x] event directive
+ - [x] option directive
+ - [x] plugin directive

@@ -22,6 +22,7 @@ pub enum Directive {
     Event(NaiveDate, String, String),
     Custom,
     Option(String, String),
+    Plugin(String, Option<String>),
 }
 
 #[derive(Debug, EnumString, PartialEq, PartialOrd)]
@@ -719,7 +720,7 @@ mod test {
         use chrono::NaiveDate;
 
         #[test]
-        fn has_document_content() {
+        fn test() {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 price USD   7 CNY"#)
                 .unwrap();
@@ -738,7 +739,7 @@ mod test {
         use chrono::NaiveDate;
 
         #[test]
-        fn has_document_content() {
+        fn test() {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 event "location"  "China""#)
                 .unwrap();
@@ -756,11 +757,38 @@ mod test {
         use crate::{models::Directive, parser::DirectiveExpressionParser};
 
         #[test]
-        fn has_document_content() {
+        fn test() {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"option "title"  "Personal""#)
                 .unwrap();
             let directive = Box::new(Directive::Option("title".to_owned(), "Personal".to_owned()));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod plugin {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+
+        #[test]
+        fn has_plugin_data() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"plugin "module name"  "config data""#)
+                .unwrap();
+            let directive = Box::new(Directive::Plugin(
+                "module name".to_owned(),
+                Some("config data".to_owned()),
+            ));
+
+            assert_eq!(directive, x);
+        }
+
+        #[test]
+        fn do_not_has_plugin_config_data() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"plugin "module name""#)
+                .unwrap();
+            let directive = Box::new(Directive::Plugin("module name".to_owned(), None));
 
             assert_eq!(directive, x);
         }

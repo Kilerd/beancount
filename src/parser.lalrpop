@@ -50,10 +50,15 @@ pub DirectiveExpression: Box<Directive> = {
     DocumentExpression,
     PriceExpression,
     EventExpression,
+    PluginExpression,
 }
 
 pub OptionExpression: Box<Directive> = {
     "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Box::new(Directive::Option(key, value))
+}
+
+pub PluginExpression: Box<Directive> = {
+    "plugin" SPACE+ <module_name: StringExpression> <config: (SPACE+ <StringExpression>)?> => Box::new(Directive::Plugin(module_name, config))
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -111,6 +116,9 @@ pub PriceExpression: Box<Directive> = {
 pub EventExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Box::new(Directive::Event(date, name, description))
 }
+
+
+
 
 pub FlagExpression: Flag = {
     "!" => Flag::from_str(<>).unwrap(),
