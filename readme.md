@@ -6,7 +6,7 @@
  - [x] close directive
  - [x] note directive
  - [x] commodity directive
- - [ ] transaction directive
+ - [x] transaction directive
     - [x] optional single price
     - [x] optional total price
     - [ ] optional actual cost
