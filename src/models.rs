@@ -46,6 +46,7 @@ impl Account {
     }
 }
 
+// todo tags links
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Transaction {
     date: NaiveDate,
@@ -342,6 +343,50 @@ mod test {
                 date: NaiveDate::from_ymd(1970, 01, 01),
                 flag: Flag::Complete,
                 payee: Some("Payee".to_owned()),
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn without_payee_with_narration() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 01, 01),
+                flag: Flag::Complete,
+                payee: None,
                 narration: Some("Narration".to_owned()),
                 tags: vec![],
                 links: vec![],
