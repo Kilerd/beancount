@@ -13,7 +13,7 @@ pub enum Directive {
     Metadata,
     Balance,
     Tag,
-    Pad,
+    Pad(NaiveDate, Account, Account),
     Note(NaiveDate, Account, String),
     Document,
     Price,
@@ -648,6 +648,37 @@ mod test {
             let x1 = Box::new(Directive::Transaction(transaction));
 
             assert_eq!(x1, x);
+        }
+    }
+
+    mod pad {
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
+        use chrono::NaiveDate;
+        #[test]
+        fn pad_directive() {
+            let x = DirectiveExpressionParser::new()
+                .parse("1970-01-01 pad Assets:123:234:English:中文:日本語:한국어 Equity:ABC")
+                .unwrap();
+            let directive = Box::new(Directive::Pad(
+                NaiveDate::from_ymd(1970, 1, 1),
+                Account::new(
+                    AccountType::Assets,
+                    vec![
+                        "123".to_owned(),
+                        "234".to_owned(),
+                        "English".to_owned(),
+                        "中文".to_owned(),
+                        "日本語".to_owned(),
+                        "한국어".to_owned(),
+                    ],
+                ),
+                Account::new(AccountType::Equity, vec!["ABC".to_owned()]),
+            ));
+
+            assert_eq!(directive, x);
         }
     }
 }

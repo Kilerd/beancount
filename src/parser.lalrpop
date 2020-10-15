@@ -44,6 +44,7 @@ pub DirectiveExpression: Box<Directive> = {
     CloseExpression,
     CommodityExpression,
     <TransactionExpression> => Box::new(Directive::Transaction(<>)),
+    PadExpression,
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -71,6 +72,11 @@ pub TransactionExpression: Transaction = {
 
     => Transaction::from_parser(date, flag, pn, v)
 }
+
+pub PadExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Box::new(Directive::Pad(date, from, to))
+}
+
 
 
 pub FlagExpression: Flag = {

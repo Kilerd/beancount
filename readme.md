@@ -9,4 +9,4 @@
  - [ ] transaction directive
  - [ ] push tag & pop tag
  - [ ] balance directive
- - [ ] pad directive
+ - [x] pad directive
