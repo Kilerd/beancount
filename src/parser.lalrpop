@@ -67,7 +67,7 @@ pub CommodityExpression: Box<Directive> = {
 
 pub TransactionExpression: Transaction = {
     <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression>  <(SPACE* ("|" SPACE+)? <StringExpression>)?>)?>
-    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> SPACE+ <Amount?> )*>
+    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <(SPACE+ <Amount>)?> )*>
 
     => Transaction::from_parser(date, flag, pn, v)
 }

@@ -338,7 +338,7 @@ mod test {
             models::{Account, AccountType, Directive, Flag, Transaction, TransactionLine},
             parser::DirectiveExpressionParser,
         };
-        use bigdecimal::BigDecimal;
+        use bigdecimal::{BigDecimal, FromPrimitive};
         use chrono::NaiveDate;
 
         #[test]
@@ -419,6 +419,106 @@ mod test {
                 date: NaiveDate::from_ymd(1970, 1, 1),
                 flag: Flag::Complete,
                 payee: None,
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn multiple_transaction_lines() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 0.5 CNY
+                  Expenses:TestCategory:Two 0.5 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from_f32(0.5f32).unwrap(), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let c = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "Two".to_owned()],
+                ),
+                amount: Some((BigDecimal::from_f32(0.5f32).unwrap(), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: Some("Payee".to_owned()),
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec![],
+                lines: vec![a, b, c],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn optional_amount_in_line() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: None,
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: Some("Payee".to_owned()),
                 narration: Some("Narration".to_owned()),
                 tags: vec![],
                 links: vec![],
