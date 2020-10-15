@@ -5,7 +5,7 @@ use crate::error::BeanCountError;
 use lalrpop_util::ParseError;
 use snailquote::unescape;
 use std::str::FromStr;
-
+use bigdecimal::BigDecimal;
 grammar;
 
 extern {
@@ -45,6 +45,7 @@ pub DirectiveExpression: Box<Directive> = {
     CommodityExpression,
     <TransactionExpression> => Box::new(Directive::Transaction(<>)),
     PadExpression,
+    BalanceExpression,
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -77,6 +78,10 @@ pub PadExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Box::new(Directive::Pad(date, from, to))
 }
 
+pub BalanceExpression: Box<Directive> = {
+     <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Balance(date, account, amount))
+}
+
 
 
 pub FlagExpression: Flag = {
@@ -84,9 +89,9 @@ pub FlagExpression: Flag = {
     "*" => Flag::from_str(<>).unwrap()
 }
 
-pub Amount: String = {
+pub Amount: (BigDecimal, String) = {
 
-r"[+-]?\d+(\.\d+)? +[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"    => <>.to_owned()
+r"[+-]?\d+(\.\d+)? +[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"    => amount_parse(<>)
 }
 
 

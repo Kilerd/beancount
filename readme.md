@@ -13,5 +13,5 @@
     - [ ] tags
     - [ ] links
  - [ ] push tag & pop tag
- - [ ] balance directive
+ - [x] balance directive
  - [x] pad directive

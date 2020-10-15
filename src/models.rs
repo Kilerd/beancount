@@ -4,6 +4,8 @@ use indexmap::IndexMap;
 use std::str::FromStr;
 use strum_macros::EnumString;
 
+pub type Amount = (BigDecimal, String);
+
 #[derive(Debug, PartialEq)]
 pub enum Directive {
     Open(NaiveDate, Account, Option<Vec<String>>),
@@ -11,7 +13,7 @@ pub enum Directive {
     Commodity(NaiveDate, String, IndexMap<String, String>),
     Transaction(Transaction),
     Metadata,
-    Balance,
+    Balance(NaiveDate, Account, Amount),
     Tag,
     Pad(NaiveDate, Account, Account),
     Note(NaiveDate, Account, String),
@@ -60,10 +62,10 @@ pub struct Transaction {
 pub struct TransactionLine {
     flag: Flag,
     account: Account,
-    amount: Option<(BigDecimal, String)>,
-    cost: Option<(BigDecimal, String)>,
-    single_price: Option<(BigDecimal, String)>,
-    total_price: Option<(BigDecimal, String)>,
+    amount: Option<Amount>,
+    cost: Option<Amount>,
+    single_price: Option<Amount>,
+    total_price: Option<Amount>,
 }
 
 #[derive(EnumString, Debug, PartialEq, PartialOrd)]
@@ -72,6 +74,12 @@ pub enum Flag {
     Complete,
     #[strum(serialize = "!", to_string = "!")]
     Incomplete,
+}
+
+pub(crate) fn amount_parse(input: &str) -> Amount {
+    let parts: Vec<String> = input.splitn(2, ' ').map(|p| p.trim().to_owned()).collect();
+    let price = BigDecimal::from_str(parts[0].as_str()).unwrap();
+    (price, parts[1].to_owned())
 }
 
 impl Transaction {
@@ -102,9 +110,9 @@ impl Transaction {
         raw_lines: Vec<(
             Option<Flag>,
             Account,
-            Option<String>,
-            Option<String>,
-            Option<String>,
+            Option<Amount>,
+            Option<Amount>,
+            Option<Amount>,
         )>,
     ) -> Transaction {
         let (payee, narration) = match pn {
@@ -135,46 +143,12 @@ impl TransactionLine {
     pub fn from_parser(
         flag: Option<Flag>,
         account: Account,
-        amount: Option<String>,
-        single_price: Option<String>,
-        total_price: Option<String>,
+        amount: Option<Amount>,
+        single_price: Option<Amount>,
+        total_price: Option<Amount>,
     ) -> TransactionLine {
         let flag = flag.unwrap_or(Flag::Complete);
 
-        let amount = amount
-            .map(|s| {
-                s.splitn(2, ' ')
-                    .map(|p| p.trim().to_owned())
-                    .collect::<Vec<String>>()
-            })
-            .map(|v| {
-                let price = BigDecimal::from_str(v[0].as_str()).unwrap();
-                let commodity = v[1].to_owned();
-                (price, commodity)
-            });
-
-        let single_price = single_price
-            .map(|s| {
-                s.splitn(2, ' ')
-                    .map(|p| p.trim().to_owned())
-                    .collect::<Vec<String>>()
-            })
-            .map(|v| {
-                let price = BigDecimal::from_str(v[0].as_str()).unwrap();
-                let commodity = v[1].to_owned();
-                (price, commodity)
-            });
-        let total_price = total_price
-            .map(|s| {
-                s.splitn(2, ' ')
-                    .map(|p| p.trim().to_owned())
-                    .collect::<Vec<String>>()
-            })
-            .map(|v| {
-                let price = BigDecimal::from_str(v[0].as_str()).unwrap();
-                let commodity = v[1].to_owned();
-                (price, commodity)
-            });
         TransactionLine {
             flag,
             account,
@@ -679,6 +653,60 @@ mod test {
             ));
 
             assert_eq!(directive, x);
+        }
+    }
+
+    mod balance {
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
+        use bigdecimal::BigDecimal;
+        use chrono::NaiveDate;
+
+        #[test]
+        fn balance_directive() {
+            let x = DirectiveExpressionParser::new()
+                .parse("1970-01-01 balance Assets:123:234:English:中文:日本語:한국어  1 CNY")
+                .unwrap();
+            let directive = Box::new(Directive::Balance(
+                NaiveDate::from_ymd(1970, 1, 1),
+                Account::new(
+                    AccountType::Assets,
+                    vec![
+                        "123".to_owned(),
+                        "234".to_owned(),
+                        "English".to_owned(),
+                        "中文".to_owned(),
+                        "日本語".to_owned(),
+                        "한국어".to_owned(),
+                    ],
+                ),
+                (BigDecimal::from(1i16), "CNY".to_owned()),
+            ));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod utils {
+        use crate::models::amount_parse;
+        use bigdecimal::BigDecimal;
+
+        #[test]
+        fn test_amount_parse() {
+            assert_eq!(
+                (BigDecimal::from(1), "CNY".to_owned()),
+                amount_parse("1 CNY")
+            );
+            assert_eq!(
+                (BigDecimal::from(1), "CNY".to_owned()),
+                amount_parse("1     CNY")
+            );
+            assert_eq!(
+                (BigDecimal::from(-1), "CNY".to_owned()),
+                amount_parse("-1     CNY")
+            );
         }
     }
 }
