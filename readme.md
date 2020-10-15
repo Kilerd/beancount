@@ -20,3 +20,4 @@
  - [x] event directive
  - [x] option directive
  - [x] plugin directive
+ - [x] include directive

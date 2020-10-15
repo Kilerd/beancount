@@ -23,6 +23,7 @@ pub enum Directive {
     Custom,
     Option(String, String),
     Plugin(String, Option<String>),
+    Include(String),
 }
 
 #[derive(Debug, EnumString, PartialEq, PartialOrd)]
@@ -789,6 +790,19 @@ mod test {
                 .parse(r#"plugin "module name""#)
                 .unwrap();
             let directive = Box::new(Directive::Plugin("module name".to_owned(), None));
+
+            assert_eq!(directive, x);
+        }
+    }
+    mod include {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+
+        #[test]
+        fn has_plugin_data() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"include "file path""#)
+                .unwrap();
+            let directive = Box::new(Directive::Include("file path".to_owned()));
 
             assert_eq!(directive, x);
         }

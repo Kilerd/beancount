@@ -51,6 +51,7 @@ pub DirectiveExpression: Box<Directive> = {
     PriceExpression,
     EventExpression,
     PluginExpression,
+    IncludeExpression,
 }
 
 pub OptionExpression: Box<Directive> = {
@@ -59,6 +60,10 @@ pub OptionExpression: Box<Directive> = {
 
 pub PluginExpression: Box<Directive> = {
     "plugin" SPACE+ <module_name: StringExpression> <config: (SPACE+ <StringExpression>)?> => Box::new(Directive::Plugin(module_name, config))
+}
+
+pub IncludeExpression: Box<Directive> = {
+    "include" SPACE+ <file_path: StringExpression>=> Box::new(Directive::Include(file_path))
 }
 
 pub OpenExpression: Box<Directive> = {
