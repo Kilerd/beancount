@@ -99,7 +99,7 @@ impl Transaction {
         date: NaiveDate,
         flag: Flag,
         pn: Option<(String, Option<String>)>,
-        raw_lines: Vec<(Option<Flag>, Account, Option<String>)>,
+        raw_lines: Vec<(Option<Flag>, Account, Option<String>, Option<String>)>,
     ) -> Transaction {
         let (payee, narration) = match pn {
             None => (None, None),
@@ -109,7 +109,9 @@ impl Transaction {
 
         let x = raw_lines
             .into_iter()
-            .map(|(flag, account, amount)| TransactionLine::from_parser(flag, account, amount))
+            .map(|(flag, account, amount, single_price)| {
+                TransactionLine::from_parser(flag, account, amount, single_price)
+            })
             .collect();
         Transaction {
             date,
@@ -128,10 +130,23 @@ impl TransactionLine {
         flag: Option<Flag>,
         account: Account,
         amount: Option<String>,
+        single_price: Option<String>,
     ) -> TransactionLine {
         let flag = flag.unwrap_or(Flag::Complete);
 
-        let option = amount
+        let amount = amount
+            .map(|s| {
+                s.splitn(2, ' ')
+                    .map(|p| p.trim().to_owned())
+                    .collect::<Vec<String>>()
+            })
+            .map(|v| {
+                let price = BigDecimal::from_str(v[0].as_str()).unwrap();
+                let commodity = v[1].to_owned();
+                (price, commodity)
+            });
+
+        let single_price = single_price
             .map(|s| {
                 s.splitn(2, ' ')
                     .map(|p| p.trim().to_owned())
@@ -145,9 +160,9 @@ impl TransactionLine {
         TransactionLine {
             flag,
             account,
-            amount: option,
+            amount,
             cost: None,
-            single_price: None,
+            single_price,
             total_price: None,
         }
     }
@@ -512,6 +527,50 @@ mod test {
                 amount: None,
                 cost: None,
                 single_price: None,
+                total_price: None,
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: Some("Payee".to_owned()),
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn optional_single_price() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @ 1 CNY"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: None,
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CCC".to_string())),
+                cost: None,
+                single_price: Some((BigDecimal::from(1i16), "CNY".to_string())),
                 total_price: None,
             };
 
