@@ -48,6 +48,7 @@ pub DirectiveExpression: Box<Directive> = {
     BalanceExpression,
     DocumentExpression,
     PriceExpression,
+    EventExpression,
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -102,6 +103,9 @@ pub PriceExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Price(date, commodity, amount))
 }
 
+pub EventExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Box::new(Directive::Event(date, name, description))
+}
 
 pub FlagExpression: Flag = {
     "!" => Flag::from_str(<>).unwrap(),

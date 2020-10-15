@@ -19,7 +19,7 @@ pub enum Directive {
     Note(NaiveDate, Account, String),
     Document(NaiveDate, Account, String),
     Price(NaiveDate, String, Amount),
-    Event,
+    Event(NaiveDate, String, String),
     Custom,
 }
 
@@ -726,6 +726,25 @@ mod test {
                 NaiveDate::from_ymd(1970, 1, 1),
                 "USD".to_owned(),
                 (BigDecimal::from(7i16), "CNY".to_owned()),
+            ));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod event {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+        use chrono::NaiveDate;
+
+        #[test]
+        fn has_document_content() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"1970-01-01 event "location"  "China""#)
+                .unwrap();
+            let directive = Box::new(Directive::Event(
+                NaiveDate::from_ymd(1970, 1, 1),
+                "location".to_owned(),
+                "China".to_owned(),
             ));
 
             assert_eq!(directive, x);
