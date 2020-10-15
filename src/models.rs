@@ -21,6 +21,7 @@ pub enum Directive {
     Price(NaiveDate, String, Amount),
     Event(NaiveDate, String, String),
     Custom,
+    Option(String, String),
 }
 
 #[derive(Debug, EnumString, PartialEq, PartialOrd)]
@@ -746,6 +747,20 @@ mod test {
                 "location".to_owned(),
                 "China".to_owned(),
             ));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod option {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+
+        #[test]
+        fn has_document_content() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"option "title"  "Personal""#)
+                .unwrap();
+            let directive = Box::new(Directive::Option("title".to_owned(), "Personal".to_owned()));
 
             assert_eq!(directive, x);
         }

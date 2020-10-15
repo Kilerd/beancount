@@ -39,6 +39,7 @@ Comma<T>: Vec<T> = { // (1)
 
 
 pub DirectiveExpression: Box<Directive> = {
+    OptionExpression,
     OpenExpression,
     NoteExpression,
     CloseExpression,
@@ -49,6 +50,10 @@ pub DirectiveExpression: Box<Directive> = {
     DocumentExpression,
     PriceExpression,
     EventExpression,
+}
+
+pub OptionExpression: Box<Directive> = {
+    "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Box::new(Directive::Option(key, value))
 }
 
 pub OpenExpression: Box<Directive> = {
