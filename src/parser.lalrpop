@@ -4,6 +4,7 @@ use chrono::{NaiveDate};
 use crate::error::BeanCountError;
 use lalrpop_util::ParseError;
 use snailquote::unescape;
+use std::str::FromStr;
 
 grammar;
 
@@ -18,8 +19,8 @@ match {
 
     r"\d{4}-\d{1,2}-\d{1,2}",
 
-
     r"[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"
+
 } else {
     // Other things you want to match
 }
@@ -42,18 +43,20 @@ pub DirectiveExpression: Box<Directive> = {
     NoteExpression,
     CloseExpression,
     CommodityExpression,
-};
+    <TransactionExpression> => Box::new(Directive::Transaction(<>)),
+}
+
 pub OpenExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Box::new(Directive::Open(date, account, commodities))
-};
+}
 
 pub NoteExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Note(date, account, note))
-};
+}
 
 pub CloseExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Box::new(Directive::Close(date, account))
-};
+}
 
 pub CommodityExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "commodity" SPACE+ <commodity: Commodity> SPACE*
@@ -62,10 +65,27 @@ pub CommodityExpression: Box<Directive> = {
       => Box::new(Directive::Commodity(date, commodity,  v.into_iter().collect()))
 }
 
+pub TransactionExpression: Transaction = {
+    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression>  SPACE+ ("|" SPACE+)? <StringExpression?>)?>
+    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> SPACE+ <Amount?> )*>
+
+    => Transaction::from_parser(date, flag, pn, v)
+}
+
+
+pub FlagExpression: Flag = {
+    "!" => Flag::from_str(<>).unwrap(),
+    "*" => Flag::from_str(<>).unwrap()
+}
+
+pub Amount: String = {
+
+r"[+-]?\d+(\.\d+)? +[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"    => <>.to_owned()
+}
 
 
 pub AttributeKey: String = {
-    AccountName
+ <r"([^\x00-\x9F]|[A-Za-z0-9-])+"> => <>.to_owned()
 }
 
 
@@ -74,16 +94,16 @@ pub StringExpression: String = {
 }
 
 pub AccountExpression: Account = {
-    "Assets" <v:(":" <AccountName>)+>  => Account::Assets(v),
-    "Liabilities" <v:(":" <AccountName>)+> => Account::Liabilities(v),
-    "Equity" <v:(":" <AccountName>)+> => Account::Equity(v),
-    "Income" <v:(":" <AccountName>)+> => Account::Income(v),
-    "Expenses" <v:(":" <AccountName>)+> => Account::Expenses(v),
+    "Assets" <v:AccountName+>  => Account::new(AccountType::Assets, v),
+    "Liabilities" <v:AccountName+> => Account::new(AccountType::Liabilities, v),
+    "Equity" <v:AccountName+> => Account::new(AccountType::Equity, v),
+    "Income" <v:AccountName+> => Account::new(AccountType::Income, v),
+    "Expenses" <v:AccountName+> => Account::new(AccountType::Expenses, v),
 };
 
 
 pub AccountName: String = {
-    <r"(([^\x00-\x9F])|([A-Za-z0-9-]))+"> => <>.to_owned()
+    <r":([^\x00-\x9F]|[A-Za-z0-9-])+"> => <>[1..<>.len()].to_owned()
 }
 
 

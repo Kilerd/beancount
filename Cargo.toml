@@ -15,6 +15,7 @@ strum = { version = "0.19", features = ["derive"] }
 strum_macros = "0.19.4"
 snailquote = "0.3.0"
 indexmap = "1.6.0"
+bigdecimal = "0.2.0"
 
 [build-dependencies]
 lalrpop = {git="https://github.com/lalrpop/lalrpop", features=["lexer"]}

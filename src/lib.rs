@@ -15,5 +15,4 @@ mod tests {
     fn test_add() {
         assert_eq!(2, add(1, 1));
     }
-
 }
