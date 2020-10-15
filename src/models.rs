@@ -1,6 +1,7 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use indexmap::IndexMap;
+use itertools::Itertools;
 use std::str::FromStr;
 use strum_macros::EnumString;
 
@@ -12,21 +13,19 @@ pub enum Directive {
     Close(NaiveDate, Account),
     Commodity(NaiveDate, String, IndexMap<String, String>),
     Transaction(Transaction),
-    Metadata,
     Balance(NaiveDate, Account, Amount),
-    Tag,
     Pad(NaiveDate, Account, Account),
     Note(NaiveDate, Account, String),
     Document(NaiveDate, Account, String),
     Price(NaiveDate, String, Amount),
     Event(NaiveDate, String, String),
-    Custom,
+    Custom(String, Vec<String>),
     Option(String, String),
     Plugin(String, Option<String>),
     Include(String),
 }
 
-#[derive(Debug, EnumString, PartialEq, PartialOrd)]
+#[derive(Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString)]
 pub enum AccountType {
     Assets,
     Liabilities,
@@ -72,7 +71,7 @@ pub struct TransactionLine {
     pub total_price: Option<Amount>,
 }
 
-#[derive(EnumString, Debug, PartialEq, PartialOrd)]
+#[derive(EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString)]
 pub enum Flag {
     #[strum(serialize = "*", to_string = "*")]
     Complete,
@@ -84,6 +83,13 @@ pub(crate) fn amount_parse(input: &str) -> Amount {
     let parts: Vec<String> = input.splitn(2, ' ').map(|p| p.trim().to_owned()).collect();
     let price = BigDecimal::from_str(parts[0].as_str()).unwrap();
     (price, parts[1].to_owned())
+}
+
+impl ToString for Account {
+    fn to_string(&self) -> String {
+        let map = self.value.iter().map(|p| format!(":{}", p)).join("");
+        format!("{}{}", self.account_type.to_string(), map)
+    }
 }
 
 impl Transaction {
@@ -947,6 +953,27 @@ mod test {
                 .parse(r#"include "file path""#)
                 .unwrap();
             let directive = Box::new(Directive::Include("file path".to_owned()));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod custom {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+
+        #[test]
+        fn custom() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"1970-01-01 custom "budget" Expenses:Eat "monthly" CNY"#)
+                .unwrap();
+            let directive = Box::new(Directive::Custom(
+                "budget".to_owned(),
+                vec![
+                    "Expenses:Eat".to_owned(),
+                    "monthly".to_owned(),
+                    "CNY".to_owned(),
+                ],
+            ));
 
             assert_eq!(directive, x);
         }

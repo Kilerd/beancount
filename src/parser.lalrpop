@@ -52,6 +52,7 @@ pub DirectiveExpression: Box<Directive> = {
     EventExpression,
     PluginExpression,
     IncludeExpression,
+    CustomExpression,
 }
 
 pub OptionExpression: Box<Directive> = {
@@ -122,8 +123,16 @@ pub EventExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Box::new(Directive::Event(date, name, description))
 }
 
+pub CustomExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "custom" SPACE+ <name: StringExpression> <config: (SPACE+ <CustomConfigItem>)+> => Box::new(Directive::Custom(name, config))
+}
 
-
+pub CustomConfigItem: String = {
+    StringExpression,
+    AccountExpression => <>.to_string(),
+    Commodity,
+    AttributeKey,
+}
 
 pub FlagExpression: Flag = {
     "!" => Flag::from_str(<>).unwrap(),
@@ -131,8 +140,7 @@ pub FlagExpression: Flag = {
 }
 
 pub Amount: (BigDecimal, String) = {
-
-r"[+-]?\d+(\.\d+)? +[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"    => amount_parse(<>)
+    r"[+-]?\d+(\.\d+)? +[A-Z][A-Z0-9_\-'\.]{0,22}[A-Z0-9]"    => amount_parse(<>)
 }
 
 
