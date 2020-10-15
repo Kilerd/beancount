@@ -15,3 +15,4 @@
  - [ ] push tag & pop tag
  - [x] balance directive
  - [x] pad directive
+ - [x] document directive

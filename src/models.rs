@@ -17,7 +17,7 @@ pub enum Directive {
     Tag,
     Pad(NaiveDate, Account, Account),
     Note(NaiveDate, Account, String),
-    Document,
+    Document(NaiveDate, Account, String),
     Price,
     Event,
     Custom,
@@ -49,23 +49,23 @@ impl Account {
 // todo tags links
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Transaction {
-    date: NaiveDate,
-    flag: Flag,
-    payee: Option<String>,
-    narration: Option<String>,
-    tags: Vec<String>,
-    links: Vec<String>,
-    lines: Vec<TransactionLine>,
+    pub date: NaiveDate,
+    pub flag: Flag,
+    pub payee: Option<String>,
+    pub narration: Option<String>,
+    pub tags: Vec<String>,
+    pub links: Vec<String>,
+    pub lines: Vec<TransactionLine>,
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct TransactionLine {
-    flag: Flag,
-    account: Account,
-    amount: Option<Amount>,
-    cost: Option<Amount>,
-    single_price: Option<Amount>,
-    total_price: Option<Amount>,
+    pub flag: Flag,
+    pub account: Account,
+    pub amount: Option<Amount>,
+    pub cost: Option<Amount>,
+    pub single_price: Option<Amount>,
+    pub total_price: Option<Amount>,
 }
 
 #[derive(EnumString, Debug, PartialEq, PartialOrd)]
@@ -107,13 +107,7 @@ impl Transaction {
         date: NaiveDate,
         flag: Flag,
         pn: Option<(String, Option<String>)>,
-        raw_lines: Vec<(
-            Option<Flag>,
-            Account,
-            Option<Amount>,
-            Option<Amount>,
-            Option<Amount>,
-        )>,
+        lines: Vec<TransactionLine>,
     ) -> Transaction {
         let (payee, narration) = match pn {
             None => (None, None),
@@ -121,12 +115,6 @@ impl Transaction {
             Some((payee, Some(narration))) => (Some(payee), Some(narration)),
         };
 
-        let x = raw_lines
-            .into_iter()
-            .map(|(flag, account, amount, single_price, total_price)| {
-                TransactionLine::from_parser(flag, account, amount, single_price, total_price)
-            })
-            .collect();
         Transaction {
             date,
             flag,
@@ -134,28 +122,7 @@ impl Transaction {
             narration,
             tags: vec![],
             links: vec![],
-            lines: x,
-        }
-    }
-}
-
-impl TransactionLine {
-    pub fn from_parser(
-        flag: Option<Flag>,
-        account: Account,
-        amount: Option<Amount>,
-        single_price: Option<Amount>,
-        total_price: Option<Amount>,
-    ) -> TransactionLine {
-        let flag = flag.unwrap_or(Flag::Complete);
-
-        TransactionLine {
-            flag,
-            account,
-            amount,
-            cost: None,
-            single_price,
-            total_price,
+            lines,
         }
     }
 }
@@ -707,6 +674,41 @@ mod test {
                 (BigDecimal::from(-1), "CNY".to_owned()),
                 amount_parse("-1     CNY")
             );
+        }
+    }
+
+    mod document {
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
+        use chrono::NaiveDate;
+        #[test]
+        fn empty_string() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"1970-01-01 document Assets:123 """#)
+                .unwrap();
+            let directive = Box::new(Directive::Document(
+                NaiveDate::from_ymd(1970, 1, 1),
+                Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                "".to_owned(),
+            ));
+
+            assert_eq!(directive, x);
+        }
+
+        #[test]
+        fn has_document_content() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"1970-01-01 document Assets:123 "here I am""#)
+                .unwrap();
+            let directive = Box::new(Directive::Document(
+                NaiveDate::from_ymd(1970, 1, 1),
+                Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                "here I am".to_owned(),
+            ));
+
+            assert_eq!(directive, x);
         }
     }
 }

@@ -46,6 +46,7 @@ pub DirectiveExpression: Box<Directive> = {
     <TransactionExpression> => Box::new(Directive::Transaction(<>)),
     PadExpression,
     BalanceExpression,
+    DocumentExpression,
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -71,7 +72,15 @@ pub TransactionExpression: Transaction = {
     <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression>  <(SPACE* ("|" SPACE+)? <StringExpression>)?>)?>
     <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <(SPACE+ <Amount>)?> <(SPACE+ "@" SPACE+ <Amount>)?> <(SPACE+ "@@" SPACE+ <Amount>)?> )*>
 
-    => Transaction::from_parser(date, flag, pn, v)
+    => {
+    let lines = v.into_iter().map(|line| {
+        let (flag, account, amount, single_price, total_price) = line;
+        let flag = flag.unwrap_or(Flag::Complete);
+        let cost = None; // todo implement cost;
+        TransactionLine{flag, account, amount, cost, single_price, total_price}
+    }).collect();
+    Transaction::from_parser(date, flag, pn, lines)
+    }
 }
 
 pub PadExpression: Box<Directive> = {
@@ -80,6 +89,11 @@ pub PadExpression: Box<Directive> = {
 
 pub BalanceExpression: Box<Directive> = {
      <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Balance(date, account, amount))
+}
+
+
+pub DocumentExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Document(date, account, note))
 }
 
 
