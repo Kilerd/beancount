@@ -88,18 +88,29 @@ pub CommodityExpression: Box<Directive> = {
 
 pub TransactionExpression: Transaction = {
     <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression> SPACE*  <(("|" SPACE+)? <StringExpression> SPACE*)?>)?> <tags: ("#" <AttributeKey> SPACE*)*> <links: ("^" <AttributeKey> SPACE*)*>
-    <v:("\n" SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <(SPACE+ <Amount>)?> <(SPACE+ "@" SPACE* <Amount>)?> <(SPACE+ "@@" SPACE* <Amount>)?> )*>
+    <v:("\n" <TransactionLineExpression> )*>
 
     => {
-    let lines = v.into_iter().map(|line| {
-        let (flag, account, amount, single_price, total_price) = line;
-        let flag = flag.unwrap_or(Flag::Complete);
-        let cost = None; // todo implement cost;
-        TransactionLine{flag, account, amount, cost, single_price, total_price}
-    }).collect();
+    let lines = v.into_iter().map(TransactionLine::from_parser).collect();
     Transaction::from_parser(date, flag, pn, tags, links, lines)
     }
 }
+
+pub TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)>) = {
+    SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
+}
+pub TLOptions:Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)> = {
+    (
+        SPACE+ <Amount> SPACE*
+        <("{" <Amount> SPACE* <Cost?> "}" SPACE*)?>
+        <SinglePrice?>
+        <TotalPrice?>
+    )?
+}
+
+Cost: String = { "," SPACE* <StringExpression> SPACE* }
+SinglePrice: Amount = { "@" SPACE* <Amount> SPACE* }
+TotalPrice: Amount = { "@@" SPACE* <Amount> }
 
 pub PadExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Box::new(Directive::Pad(date, from, to))

@@ -66,7 +66,7 @@ pub struct TransactionLine {
     pub flag: Flag,
     pub account: Account,
     pub amount: Option<Amount>,
-    pub cost: Option<Amount>,
+    pub cost: Option<(Amount, Option<String>)>,
     pub single_price: Option<Amount>,
     pub total_price: Option<Amount>,
 }
@@ -135,6 +135,36 @@ impl Transaction {
             tags,
             links,
             lines,
+        }
+    }
+}
+
+impl TransactionLine {
+    pub(crate) fn from_parser(
+        (flag, account, amount_info): (
+            Option<Flag>,
+            Account,
+            Option<(
+                Amount,
+                Option<(Amount, Option<String>)>,
+                Option<Amount>,
+                Option<Amount>,
+            )>,
+        ),
+    ) -> Self {
+        let flag = flag.unwrap_or(Flag::Complete);
+        let (amount, cost, single_price, total_price) = match amount_info {
+            None => (None, None, None, None),
+            Some((a, c, s, t)) => (Some(a), c, s, t),
+        };
+
+        TransactionLine {
+            flag,
+            account,
+            amount,
+            cost,
+            single_price,
+            total_price,
         }
     }
 }
@@ -403,6 +433,56 @@ mod test {
                 ),
                 amount: Some((BigDecimal::from(1i16), "CNY".to_string())),
                 cost: None,
+                single_price: None,
+                total_price: None,
+            };
+
+            let transaction = Transaction {
+                date: NaiveDate::from_ymd(1970, 1, 1),
+                flag: Flag::Complete,
+                payee: None,
+                narration: Some("Narration".to_owned()),
+                tags: vec![],
+                links: vec![],
+                lines: vec![a, b],
+            };
+            let x1 = Box::new(Directive::Transaction(transaction));
+
+            assert_eq!(x1, x);
+        }
+
+        #[test]
+        fn cost_and_cost_comment() {
+            let x = DirectiveExpressionParser::new()
+                .parse(
+                    r#"1970-01-01 * "Narration"
+                  Assets:123  -1 CNY {0.1 USD , "TEST"}
+                  Expenses:TestCategory:One 1 CNY {0.1 USD}"#,
+                )
+                .unwrap();
+
+            let a = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(AccountType::Assets, vec!["123".to_owned()]),
+                amount: Some((BigDecimal::from(-1i16), "CNY".to_string())),
+                cost: Some((
+                    (BigDecimal::from_f32(0.1f32).unwrap(), "USD".to_owned()),
+                    Some("TEST".to_owned()),
+                )),
+                single_price: None,
+                total_price: None,
+            };
+            let b = TransactionLine {
+                flag: Flag::Complete,
+                account: Account::new(
+                    AccountType::Expenses,
+                    vec!["TestCategory".to_owned(), "One".to_owned()],
+                ),
+                amount: Some((BigDecimal::from(1i16), "CNY".to_string())),
+                cost: Some((
+                    (BigDecimal::from_f32(0.1f32).unwrap(), "USD".to_owned()),
+                    None,
+                )),
                 single_price: None,
                 total_price: None,
             };

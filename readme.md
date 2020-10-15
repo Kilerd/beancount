@@ -9,7 +9,7 @@
  - [x] transaction directive
     - [x] optional single price
     - [x] optional total price
-    - [ ] optional actual cost
+    - [x] optional actual cost
     - [x] tags
     - [x] links
  - [ ] push tag & pop tag
