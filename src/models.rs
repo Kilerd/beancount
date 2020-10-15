@@ -1,10 +1,8 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use indexmap::IndexMap;
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use strum_macros::EnumString;
 use std::str::FromStr;
+use strum_macros::EnumString;
 
 #[derive(Debug, PartialEq)]
 pub enum Directive {
@@ -58,7 +56,6 @@ pub struct Transaction {
     lines: Vec<TransactionLine>,
 }
 
-
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct TransactionLine {
     flag: Flag,
@@ -77,22 +74,43 @@ pub enum Flag {
     Incomplete,
 }
 
-
 impl Transaction {
-    pub fn new(date: NaiveDate, flag: Flag, payee: Option<String>, narration: Option<String>, tags: Vec<String>, links: Vec<String>, lines: Vec<TransactionLine>) -> Self {
-        Transaction { date, flag, payee, narration, tags, links, lines }
+    pub fn new(
+        date: NaiveDate,
+        flag: Flag,
+        payee: Option<String>,
+        narration: Option<String>,
+        tags: Vec<String>,
+        links: Vec<String>,
+        lines: Vec<TransactionLine>,
+    ) -> Self {
+        Transaction {
+            date,
+            flag,
+            payee,
+            narration,
+            tags,
+            links,
+            lines,
+        }
     }
 
-    pub(crate) fn from_parser(date:NaiveDate, flag: Flag, pn:Option<(String, Option<String>)>, raw_lines: Vec<(Option<Flag>, Account, Option<String>)>) -> Transaction {
+    pub(crate) fn from_parser(
+        date: NaiveDate,
+        flag: Flag,
+        pn: Option<(String, Option<String>)>,
+        raw_lines: Vec<(Option<Flag>, Account, Option<String>)>,
+    ) -> Transaction {
         let (payee, narration) = match pn {
             None => (None, None),
-            Some((narration, None)) => {
-                (None, Some(narration))
-            },
-            Some((payee, Some(narration))) => (Some(payee), Some(narration))
+            Some((narration, None)) => (None, Some(narration)),
+            Some((payee, Some(narration))) => (Some(payee), Some(narration)),
         };
 
-        let x = raw_lines.into_iter().map(|(flag, account, amount)| TransactionLine::from_parser(flag, account, amount)).collect();
+        let x = raw_lines
+            .into_iter()
+            .map(|(flag, account, amount)| TransactionLine::from_parser(flag, account, amount))
+            .collect();
         Transaction {
             date,
             flag,
@@ -100,19 +118,26 @@ impl Transaction {
             narration,
             tags: vec![],
             links: vec![],
-            lines: x
+            lines: x,
         }
     }
 }
 
-impl TransactionLine  {
-
-    pub fn from_parser(flag: Option<Flag>, account:Account, amount:Option<String>) -> TransactionLine {
+impl TransactionLine {
+    pub fn from_parser(
+        flag: Option<Flag>,
+        account: Account,
+        amount: Option<String>,
+    ) -> TransactionLine {
         let flag = flag.unwrap_or(Flag::Complete);
 
-        let option= amount
-            .map(|s| s.splitn(2, " ").map(|p| p.trim().to_owned()).collect::<Vec<String>>())
-            .map( |v| {
+        let option = amount
+            .map(|s| {
+                s.splitn(2, ' ')
+                    .map(|p| p.trim().to_owned())
+                    .collect::<Vec<String>>()
+            })
+            .map(|v| {
                 let price = BigDecimal::from_str(v[0].as_str()).unwrap();
                 let commodity = v[1].to_owned();
                 (price, commodity)
@@ -123,7 +148,7 @@ impl TransactionLine  {
             amount: option,
             cost: None,
             single_price: None,
-            total_price: None
+            total_price: None,
         }
     }
 }
@@ -132,8 +157,10 @@ impl TransactionLine  {
 mod test {
 
     mod open {
-        use crate::models::{Account, AccountType, Directive};
-        use crate::parser::DirectiveExpressionParser;
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
         use chrono::NaiveDate;
         #[test]
         fn test_open_directive() {
@@ -204,8 +231,10 @@ mod test {
     }
 
     mod close {
-        use crate::models::{Account, AccountType, Directive};
-        use crate::parser::DirectiveExpressionParser;
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
         use chrono::NaiveDate;
         #[test]
         fn test_close() {
@@ -224,8 +253,10 @@ mod test {
     }
 
     mod note {
-        use crate::models::{Account, AccountType, Directive};
-        use crate::parser::DirectiveExpressionParser;
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::DirectiveExpressionParser,
+        };
         use chrono::NaiveDate;
         #[test]
         fn test_note_directive() {
@@ -242,8 +273,7 @@ mod test {
     }
 
     mod commodity {
-        use crate::models::{Account, Directive};
-        use crate::parser::DirectiveExpressionParser;
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
         use chrono::NaiveDate;
         use indexmap::IndexMap;
         #[test]
@@ -304,9 +334,11 @@ mod test {
     }
 
     mod transaction {
-        use crate::models::{Account, AccountType, Directive, Flag, Transaction, TransactionLine};
-        use crate::parser::DirectiveExpressionParser;
-        use bigdecimal::{BigDecimal, FromPrimitive};
+        use crate::{
+            models::{Account, AccountType, Directive, Flag, Transaction, TransactionLine},
+            parser::DirectiveExpressionParser,
+        };
+        use bigdecimal::BigDecimal;
         use chrono::NaiveDate;
 
         #[test]
@@ -340,7 +372,7 @@ mod test {
             };
 
             let transaction = Transaction {
-                date: NaiveDate::from_ymd(1970, 01, 01),
+                date: NaiveDate::from_ymd(1970, 1, 1),
                 flag: Flag::Complete,
                 payee: Some("Payee".to_owned()),
                 narration: Some("Narration".to_owned()),
@@ -384,7 +416,7 @@ mod test {
             };
 
             let transaction = Transaction {
-                date: NaiveDate::from_ymd(1970, 01, 01),
+                date: NaiveDate::from_ymd(1970, 1, 1),
                 flag: Flag::Complete,
                 payee: None,
                 narration: Some("Narration".to_owned()),
