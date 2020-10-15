@@ -16,3 +16,4 @@
  - [x] balance directive
  - [x] pad directive
  - [x] document directive
+ - [x] price directive

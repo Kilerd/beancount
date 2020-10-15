@@ -18,7 +18,7 @@ pub enum Directive {
     Pad(NaiveDate, Account, Account),
     Note(NaiveDate, Account, String),
     Document(NaiveDate, Account, String),
-    Price,
+    Price(NaiveDate, String, Amount),
     Event,
     Custom,
 }
@@ -706,6 +706,26 @@ mod test {
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(AccountType::Assets, vec!["123".to_owned()]),
                 "here I am".to_owned(),
+            ));
+
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod price {
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+        use bigdecimal::BigDecimal;
+        use chrono::NaiveDate;
+
+        #[test]
+        fn has_document_content() {
+            let x = DirectiveExpressionParser::new()
+                .parse(r#"1970-01-01 price USD   7 CNY"#)
+                .unwrap();
+            let directive = Box::new(Directive::Price(
+                NaiveDate::from_ymd(1970, 1, 1),
+                "USD".to_owned(),
+                (BigDecimal::from(7i16), "CNY".to_owned()),
             ));
 
             assert_eq!(directive, x);

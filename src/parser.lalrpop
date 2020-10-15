@@ -47,6 +47,7 @@ pub DirectiveExpression: Box<Directive> = {
     PadExpression,
     BalanceExpression,
     DocumentExpression,
+    PriceExpression,
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -96,6 +97,10 @@ pub DocumentExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Document(date, account, note))
 }
 
+
+pub PriceExpression: Box<Directive> = {
+    <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Price(date, commodity, amount))
+}
 
 
 pub FlagExpression: Flag = {
