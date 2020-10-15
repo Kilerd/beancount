@@ -8,14 +8,14 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lalrpop-util = { git="https://github.com/lalrpop/lalrpop" }
-regex = "1"
+lalrpop-util = "0.19.1"
+regex = "1.4.1"
 chrono = "0.4.19"
-strum = { version = "0.19", features = ["derive"] }
+strum = { version = "0.19.5", features = ["derive"] }
 strum_macros = "0.19.4"
 snailquote = "0.3.0"
 indexmap = "1.6.0"
 bigdecimal = "0.2.0"
 
 [build-dependencies]
-lalrpop = {git="https://github.com/lalrpop/lalrpop", features=["lexer"]}
+lalrpop = {version="0.19.1", features=["lexer"]}
