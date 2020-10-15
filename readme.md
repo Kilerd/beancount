@@ -21,3 +21,5 @@
  - [x] option directive
  - [x] plugin directive
  - [x] include directive
+ - [ ] custom directive
+ - [ ] comment supported
