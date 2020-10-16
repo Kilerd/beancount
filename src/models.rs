@@ -23,6 +23,7 @@ pub enum Directive {
     Option(String, String),
     Plugin(String, Option<String>),
     Include(String),
+    Comment(String),
 }
 
 #[derive(Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString)]
@@ -887,27 +888,6 @@ mod test {
         }
     }
 
-    mod utils {
-        use crate::models::amount_parse;
-        use bigdecimal::BigDecimal;
-
-        #[test]
-        fn test_amount_parse() {
-            assert_eq!(
-                (BigDecimal::from(1), "CNY".to_owned()),
-                amount_parse("1 CNY")
-            );
-            assert_eq!(
-                (BigDecimal::from(1), "CNY".to_owned()),
-                amount_parse("1     CNY")
-            );
-            assert_eq!(
-                (BigDecimal::from(-1), "CNY".to_owned()),
-                amount_parse("-1     CNY")
-            );
-        }
-    }
-
     mod document {
         use crate::{
             models::{Account, AccountType, Directive},
@@ -1056,6 +1036,46 @@ mod test {
             ));
 
             assert_eq!(directive, x);
+        }
+    }
+
+    mod comment {
+
+        use crate::{models::Directive, parser::DirectiveExpressionParser};
+
+        #[test]
+        fn comma() {
+            let x = DirectiveExpressionParser::new().parse(";你好啊").unwrap();
+            let directive = Box::new(Directive::Comment(";你好啊".to_owned()));
+            assert_eq!(directive, x);
+        }
+    }
+
+    mod entry {
+
+        use crate::models::{Account, AccountType};
+        use crate::{models::Directive, parser::EntryParser};
+        use chrono::NaiveDate;
+
+        #[test]
+        fn conbine_test() {
+            let content: String = vec!["\n\n;你好啊", "1970-01-01 open Assets:Book\n"].join("\n");
+
+            let entry = EntryParser::new().parse(&content).unwrap();
+
+            let directives = vec![
+                Box::new(Directive::Comment(";你好啊".to_owned())),
+                Box::new(Directive::Open(
+                    NaiveDate::from_ymd(1970, 1, 1),
+                    Account {
+                        account_type: AccountType::Assets,
+                        value: vec!["Book".to_owned()],
+                    },
+                    None,
+                )),
+            ];
+
+            assert_eq!(directives, entry);
         }
     }
 }

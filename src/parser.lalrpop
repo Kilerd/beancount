@@ -37,6 +37,10 @@ Comma<T>: Vec<T> = { // (1)
 };
 
 
+pub Entry: Vec<Box<Directive>> = {
+    <v: ("\n"* <(<DirectiveExpression> "\n"+)*>)> => v
+}
+
 
 pub DirectiveExpression: Box<Directive> = {
     OptionExpression,
@@ -53,6 +57,7 @@ pub DirectiveExpression: Box<Directive> = {
     PluginExpression,
     IncludeExpression,
     CustomExpression,
+    CommentExpression,
 }
 
 pub OptionExpression: Box<Directive> = {
@@ -81,14 +86,14 @@ pub CloseExpression: Box<Directive> = {
 
 pub CommodityExpression: Box<Directive> = {
     <date: DateExpression> SPACE+ "commodity" SPACE+ <commodity: Commodity> SPACE*
-      <v:("\n" SPACE SPACE+ <AttributeKey> SPACE* ":" SPACE* <StringExpression>)*>
+      <v:("\n  " SPACE* <AttributeKey> SPACE* ":" SPACE* <StringExpression>)*>
 
       => Box::new(Directive::Commodity(date, commodity,  v.into_iter().collect()))
 }
 
 pub TransactionExpression: Transaction = {
     <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression> SPACE*  <(("|" SPACE+)? <StringExpression> SPACE*)?>)?> <tags: ("#" <AttributeKey> SPACE*)*> <links: ("^" <AttributeKey> SPACE*)*>
-    <v:("\n" <TransactionLineExpression> )*>
+    <v:("\n  " <TransactionLineExpression> )*>
 
     => {
     let lines = v.into_iter().map(TransactionLine::from_parser).collect();
@@ -97,7 +102,7 @@ pub TransactionExpression: Transaction = {
 }
 
 pub TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)>) = {
-    SPACE SPACE+ <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
+    SPACE* <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
 }
 pub TLOptions:Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)> = {
     (
@@ -144,6 +149,12 @@ pub CustomConfigItem: String = {
     Commodity,
     AttributeKey,
 }
+
+
+pub CommentExpression: Box<Directive> = {
+    r";[^\n]*" => Box::new(Directive::Comment(<>.to_owned())),
+}
+
 
 pub FlagExpression: Flag = {
     "!" => Flag::from_str(<>).unwrap(),
