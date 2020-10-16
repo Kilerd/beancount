@@ -139,19 +139,17 @@ impl Transaction {
         }
     }
 }
-
+pub(crate) type AmountInfo = (
+    Amount,
+    Option<(Amount, Option<String>)>,
+    Option<Amount>,
+    Option<Amount>,
+);
 impl TransactionLine {
     pub(crate) fn from_parser(
-        (flag, account, amount_info): (
-            Option<Flag>,
-            Account,
-            Option<(
-                Amount,
-                Option<(Amount, Option<String>)>,
-                Option<Amount>,
-                Option<Amount>,
-            )>,
-        ),
+        flag: Option<Flag>,
+        account: Account,
+        amount_info: Option<AmountInfo>,
     ) -> Self {
         let flag = flag.unwrap_or(Flag::Complete);
         let (amount, cost, single_price, total_price) = match amount_info {

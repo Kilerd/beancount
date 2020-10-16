@@ -96,7 +96,7 @@ pub TransactionExpression: Transaction = {
     <v:("\n  " <TransactionLineExpression> )*>
 
     => {
-    let lines = v.into_iter().map(TransactionLine::from_parser).collect();
+    let lines = v.into_iter().map(|line|TransactionLine::from_parser(line.0, line.1, line.2)).collect();
     Transaction::from_parser(date, flag, pn, tags, links, lines)
     }
 }
