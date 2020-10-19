@@ -2,12 +2,13 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use strum_macros::EnumString;
 
 pub type Amount = (BigDecimal, String);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub enum Directive {
     Open(NaiveDate, Account, Option<Vec<String>>),
     Close(NaiveDate, Account),
@@ -26,7 +27,9 @@ pub enum Directive {
     Comment(String),
 }
 
-#[derive(Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString)]
+#[derive(
+    Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+)]
 pub enum AccountType {
     Assets,
     Liabilities,
@@ -35,7 +38,7 @@ pub enum AccountType {
     Expenses,
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 pub struct Account {
     account_type: AccountType,
     value: Vec<String>,
@@ -51,7 +54,7 @@ impl Account {
 }
 
 // todo tags links
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 pub struct Transaction {
     pub date: NaiveDate,
     pub flag: Flag,
@@ -62,7 +65,7 @@ pub struct Transaction {
     pub lines: Vec<TransactionLine>,
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 pub struct TransactionLine {
     pub flag: Flag,
     pub account: Account,
@@ -72,7 +75,9 @@ pub struct TransactionLine {
     pub total_price: Option<Amount>,
 }
 
-#[derive(EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString)]
+#[derive(
+    EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+)]
 pub enum Flag {
     #[strum(serialize = "*", to_string = "*")]
     Complete,
@@ -1051,8 +1056,10 @@ mod test {
 
     mod entry {
 
-        use crate::models::{Account, AccountType};
-        use crate::{models::Directive, parser::EntryParser};
+        use crate::{
+            models::{Account, AccountType, Directive},
+            parser::EntryParser,
+        };
         use chrono::NaiveDate;
 
         #[test]
