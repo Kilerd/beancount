@@ -167,7 +167,7 @@ pub Amount: (BigDecimal, String) = {
 
 
 pub AttributeKey: String = {
- <r"([^\x00-\x9F]|[A-Za-z0-9-])+"> => <>.to_owned()
+ <r"([^\x00-\x9F]|[A-Za-z0-9-_])+"> => <>.to_owned()
 }
 
 
