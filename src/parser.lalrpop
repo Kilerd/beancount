@@ -69,7 +69,7 @@ pub PluginExpression: Box<Directive> = {
 }
 
 pub IncludeExpression: Box<Directive> = {
-    "include" SPACE+ <file_path: StringExpression>=> Box::new(Directive::Include(file_path))
+    "include" SPACE+ <file_path: StringExpression> => Box::new(Directive::Include(file_path))
 }
 
 pub OpenExpression: Box<Directive> = {
@@ -96,14 +96,15 @@ pub TransactionExpression: Transaction = {
     <v:("\n  " <TransactionLineExpression> )*>
 
     => {
-    let lines = v.into_iter().map(|line|TransactionLine::from_parser(line.0, line.1, line.2)).collect();
-    Transaction::from_parser(date, flag, pn, tags, links, lines)
+        let lines = v.into_iter().map(|line|TransactionLine::from_parser(line.0, line.1, line.2)).collect();
+        Transaction::from_parser(date, flag, pn, tags, links, lines)
     }
 }
 
 PnExpression: (String, Option<String>) = {
-    <first: StringExpression> SPACE*  <second: (("|" SPACE+)? <StringExpression> SPACE*)?> => (first, second)
+    <first: StringExpression> SPACE*  <second: NarrationExpression?> => (first, second)
 }
+NarrationExpression: String = { ("|" SPACE+)? <StringExpression> SPACE* }
 TagsExpression: Vec<String> = { <TagExpression*> }
 TagExpression: String = { "#" <AttributeKey> SPACE* }
 LinksExpression: Vec<String> = { <LinkExpression*> }
@@ -116,12 +117,13 @@ pub TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(A
 pub TLOptions:Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)> = {
     (
         SPACE+ <Amount> SPACE*
-        <("{" <Amount> SPACE* <Cost?> "}" SPACE*)?>
+        <CostWithComment?>
         <SinglePrice?>
         <TotalPrice?>
     )?
 }
 
+CostWithComment: (Amount, Option<String>) = { "{" <Amount> SPACE* <Cost?> "}" SPACE* }
 Cost: String = { "," SPACE* <StringExpression> SPACE* }
 SinglePrice: Amount = { "@" SPACE* <Amount> SPACE* }
 TotalPrice: Amount = { "@@" SPACE* <Amount> }
@@ -185,12 +187,16 @@ pub StringExpression: String = {
 }
 
 pub AccountExpression: Account = {
-    "Assets" <v:AccountName+>  => Account::new(AccountType::Assets, v),
-    "Liabilities" <v:AccountName+> => Account::new(AccountType::Liabilities, v),
-    "Equity" <v:AccountName+> => Account::new(AccountType::Equity, v),
-    "Income" <v:AccountName+> => Account::new(AccountType::Income, v),
-    "Expenses" <v:AccountName+> => Account::new(AccountType::Expenses, v),
+    <account_type: AccountType> <v:AccountName+>  => Account::new(AccountType::from_str(&account_type).unwrap(), v)
 };
+
+AccountType: String = {
+    <"Assets"> => <>.to_owned(),
+    <"Liabilities"> => <>.to_owned(),
+    <"Equity"> => <>.to_owned(),
+    <"Income"> => <>.to_owned(),
+    <"Expenses"> => <>.to_owned()
+}
 
 
 pub AccountName: String = {
