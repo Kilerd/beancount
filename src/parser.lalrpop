@@ -92,7 +92,7 @@ pub CommodityExpression: Box<Directive> = {
 }
 
 pub TransactionExpression: Transaction = {
-    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: (<StringExpression> SPACE*  <(("|" SPACE+)? <StringExpression> SPACE*)?>)?> <tags: ("#" <AttributeKey> SPACE*)*> <links: ("^" <AttributeKey> SPACE*)*>
+    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: PnExpression?> <tags: TagsExpression> <links: LinksExpression>
     <v:("\n  " <TransactionLineExpression> )*>
 
     => {
@@ -100,6 +100,15 @@ pub TransactionExpression: Transaction = {
     Transaction::from_parser(date, flag, pn, tags, links, lines)
     }
 }
+
+PnExpression: (String, Option<String>) = {
+    <first: StringExpression> SPACE*  <second: (("|" SPACE+)? <StringExpression> SPACE*)?> => (first, second)
+}
+TagsExpression: Vec<String> = { <TagExpression*> }
+TagExpression: String = { "#" <AttributeKey> SPACE* }
+LinksExpression: Vec<String> = { <LinkExpression*> }
+LinkExpression: String = { "^" <AttributeKey> SPACE* }
+
 
 pub TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)>) = {
     SPACE* <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
