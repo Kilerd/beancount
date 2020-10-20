@@ -184,7 +184,7 @@ mod test {
 
         #[test]
         fn test_open_directive() {
-            let directive = Box::new(Directive::Open(
+            let directive = Directive::Open(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
@@ -198,7 +198,7 @@ mod test {
                     ],
                 ),
                 None,
-            ));
+            );
             let x = DirectiveExpressionParser::new()
                 .parse("1970-01-01 open Assets:123:234:English:中文:日本語:한국어")
                 .unwrap();
@@ -207,7 +207,7 @@ mod test {
 
         #[test]
         fn test_open_with_commodity() {
-            let directive = Box::new(Directive::Open(
+            let directive = Directive::Open(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
@@ -221,7 +221,7 @@ mod test {
                     ],
                 ),
                 Some(vec!["CNY".to_owned()]),
-            ));
+            );
             let x = DirectiveExpressionParser::new()
                 .parse("1970-01-01 open Assets:123:234:English:中文:日本語:한국어 CNY")
                 .unwrap();
@@ -230,7 +230,7 @@ mod test {
 
         #[test]
         fn test_open_with_commodities() {
-            let directive = Box::new(Directive::Open(
+            let directive = Directive::Open(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
@@ -244,7 +244,7 @@ mod test {
                     ],
                 ),
                 Some(vec!["CNY".to_owned(), "USD".to_owned(), "CAD".to_owned()]),
-            ));
+            );
             let x = DirectiveExpressionParser::new()
                 .parse("1970-01-01 open Assets:123:234:English:中文:日本語:한국어 CNY, USD,CAD")
                 .unwrap();
@@ -261,13 +261,13 @@ mod test {
 
         #[test]
         fn test_close() {
-            let directive = Box::new(Directive::Close(
+            let directive = Directive::Close(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
                     vec!["123".to_owned(), "456".to_owned()],
                 ),
-            ));
+            );
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 close Assets:123:456  "#)
                 .unwrap();
@@ -284,11 +284,11 @@ mod test {
 
         #[test]
         fn test_note_directive() {
-            let directive = Box::new(Directive::Note(
+            let directive = Directive::Note(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(AccountType::Assets, vec!["123".to_owned()]),
                 "你 好 啊\\".to_owned(),
-            ));
+            );
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 note Assets:123 "你 好 啊\\""#)
                 .unwrap();
@@ -307,11 +307,11 @@ mod test {
                 .parse(r#"1970-01-01 commodity CNY  "#)
                 .unwrap();
 
-            let directive = Box::new(Directive::Commodity(
+            let directive = Directive::Commodity(
                 NaiveDate::from_ymd(1970, 1, 1),
                 "CNY".to_owned(),
                 IndexMap::new(),
-            ));
+            );
             assert_eq!(directive, x);
         }
 
@@ -326,11 +326,8 @@ mod test {
 
             let mut map = IndexMap::new();
             map.insert("a".to_owned(), "b".to_owned());
-            let directive = Box::new(Directive::Commodity(
-                NaiveDate::from_ymd(1970, 1, 1),
-                "CNY".to_owned(),
-                map,
-            ));
+            let directive =
+                Directive::Commodity(NaiveDate::from_ymd(1970, 1, 1), "CNY".to_owned(), map);
             assert_eq!(directive, x);
         }
 
@@ -350,11 +347,8 @@ mod test {
                 "中文-test".to_owned(),
                 "한국어 我也不知道我在说啥".to_owned(),
             );
-            let directive = Box::new(Directive::Commodity(
-                NaiveDate::from_ymd(1970, 1, 1),
-                "CNY".to_owned(),
-                map,
-            ));
+            let directive =
+                Directive::Commodity(NaiveDate::from_ymd(1970, 1, 1), "CNY".to_owned(), map);
             assert_eq!(directive, x);
         }
     }
@@ -406,7 +400,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -450,7 +444,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -500,7 +494,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -556,7 +550,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b, c],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -600,7 +594,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -644,7 +638,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -688,7 +682,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -732,7 +726,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -776,7 +770,7 @@ mod test {
                 links: vec![],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -820,7 +814,7 @@ mod test {
                 links: vec!["link1".to_owned(), "link-2".to_owned()],
                 lines: vec![a, b],
             };
-            let x1 = Box::new(Directive::Transaction(transaction));
+            let x1 = Directive::Transaction(transaction);
 
             assert_eq!(x1, x);
         }
@@ -838,7 +832,7 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse("1970-01-01 pad Assets:123:234:English:中文:日本語:한국어 Equity:ABC")
                 .unwrap();
-            let directive = Box::new(Directive::Pad(
+            let directive = Directive::Pad(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
@@ -852,7 +846,7 @@ mod test {
                     ],
                 ),
                 Account::new(AccountType::Equity, vec!["ABC".to_owned()]),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -871,7 +865,7 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse("1970-01-01 balance Assets:123:234:English:中文:日本語:한국어  1 CNY")
                 .unwrap();
-            let directive = Box::new(Directive::Balance(
+            let directive = Directive::Balance(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(
                     AccountType::Assets,
@@ -885,7 +879,7 @@ mod test {
                     ],
                 ),
                 (BigDecimal::from(1i16), "CNY".to_owned()),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -903,11 +897,11 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 document Assets:123 """#)
                 .unwrap();
-            let directive = Box::new(Directive::Document(
+            let directive = Directive::Document(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(AccountType::Assets, vec!["123".to_owned()]),
                 "".to_owned(),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -917,11 +911,11 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 document Assets:123 "here I am""#)
                 .unwrap();
-            let directive = Box::new(Directive::Document(
+            let directive = Directive::Document(
                 NaiveDate::from_ymd(1970, 1, 1),
                 Account::new(AccountType::Assets, vec!["123".to_owned()]),
                 "here I am".to_owned(),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -937,11 +931,11 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 price USD   7 CNY"#)
                 .unwrap();
-            let directive = Box::new(Directive::Price(
+            let directive = Directive::Price(
                 NaiveDate::from_ymd(1970, 1, 1),
                 "USD".to_owned(),
                 (BigDecimal::from(7i16), "CNY".to_owned()),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -956,11 +950,11 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 event "location"  "China""#)
                 .unwrap();
-            let directive = Box::new(Directive::Event(
+            let directive = Directive::Event(
                 NaiveDate::from_ymd(1970, 1, 1),
                 "location".to_owned(),
                 "China".to_owned(),
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -974,7 +968,7 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"option "title"  "Personal""#)
                 .unwrap();
-            let directive = Box::new(Directive::Option("title".to_owned(), "Personal".to_owned()));
+            let directive = Directive::Option("title".to_owned(), "Personal".to_owned());
 
             assert_eq!(directive, x);
         }
@@ -988,10 +982,8 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"plugin "module name"  "config data""#)
                 .unwrap();
-            let directive = Box::new(Directive::Plugin(
-                "module name".to_owned(),
-                Some("config data".to_owned()),
-            ));
+            let directive =
+                Directive::Plugin("module name".to_owned(), Some("config data".to_owned()));
 
             assert_eq!(directive, x);
         }
@@ -1001,7 +993,7 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"plugin "module name""#)
                 .unwrap();
-            let directive = Box::new(Directive::Plugin("module name".to_owned(), None));
+            let directive = Directive::Plugin("module name".to_owned(), None);
 
             assert_eq!(directive, x);
         }
@@ -1015,7 +1007,7 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"include "file path""#)
                 .unwrap();
-            let directive = Box::new(Directive::Include("file path".to_owned()));
+            let directive = Directive::Include("file path".to_owned());
 
             assert_eq!(directive, x);
         }
@@ -1029,14 +1021,14 @@ mod test {
             let x = DirectiveExpressionParser::new()
                 .parse(r#"1970-01-01 custom "budget" Expenses:Eat "monthly" CNY"#)
                 .unwrap();
-            let directive = Box::new(Directive::Custom(
+            let directive = Directive::Custom(
                 "budget".to_owned(),
                 vec![
                     "Expenses:Eat".to_owned(),
                     "monthly".to_owned(),
                     "CNY".to_owned(),
                 ],
-            ));
+            );
 
             assert_eq!(directive, x);
         }
@@ -1049,7 +1041,7 @@ mod test {
         #[test]
         fn comma() {
             let x = DirectiveExpressionParser::new().parse(";你好啊").unwrap();
-            let directive = Box::new(Directive::Comment(";你好啊".to_owned()));
+            let directive = Directive::Comment(";你好啊".to_owned());
             assert_eq!(directive, x);
         }
     }
@@ -1069,15 +1061,15 @@ mod test {
             let entry = EntryParser::new().parse(&content).unwrap();
 
             let directives = vec![
-                Box::new(Directive::Comment(";你好啊".to_owned())),
-                Box::new(Directive::Open(
+                Directive::Comment(";你好啊".to_owned()),
+                Directive::Open(
                     NaiveDate::from_ymd(1970, 1, 1),
                     Account {
                         account_type: AccountType::Assets,
                         value: vec!["Book".to_owned()],
                     },
                     None,
-                )),
+                ),
             ];
 
             assert_eq!(directives, entry);

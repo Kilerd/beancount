@@ -37,18 +37,18 @@ Comma<T>: Vec<T> = { // (1)
 };
 
 
-pub Entry: Vec<Box<Directive>> = {
+pub Entry: Vec<Directive> = {
     <v: ("\n"* <(<DirectiveExpression> "\n"+)*>)> => v
 }
 
 
-pub DirectiveExpression: Box<Directive> = {
+pub DirectiveExpression: Directive = {
     OptionExpression,
     OpenExpression,
     NoteExpression,
     CloseExpression,
     CommodityExpression,
-    <TransactionExpression> => Box::new(Directive::Transaction(<>)),
+    <TransactionExpression> => Directive::Transaction(<>),
     PadExpression,
     BalanceExpression,
     DocumentExpression,
@@ -60,98 +60,102 @@ pub DirectiveExpression: Box<Directive> = {
     CommentExpression,
 }
 
-pub OptionExpression: Box<Directive> = {
-    "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Box::new(Directive::Option(key, value))
+pub OptionExpression:  Directive = {
+    "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Directive::Option(key, value)
 }
 
-pub PluginExpression: Box<Directive> = {
-    "plugin" SPACE+ <module_name: StringExpression> <config: (SPACE+ <StringExpression>)?> => Box::new(Directive::Plugin(module_name, config))
+pub PluginExpression:    Directive = {
+    "plugin" SPACE+ <module_name: StringExpression> <config: (SPACE+ <StringExpression>)?> => Directive::Plugin(module_name, config)
 }
 
-pub IncludeExpression: Box<Directive> = {
-    "include" SPACE+ <file_path: StringExpression> => Box::new(Directive::Include(file_path))
+pub IncludeExpression: Directive = {
+    "include" SPACE+ <file_path: StringExpression> => Directive::Include(file_path)
 }
 
-pub OpenExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Box::new(Directive::Open(date, account, commodities))
+pub OpenExpression: Directive = {
+    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Directive::Open(date, account, commodities)
 }
 
-pub NoteExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Note(date, account, note))
+pub NoteExpression: Directive = {
+    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Directive::Note(date, account, note)
 }
 
-pub CloseExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Box::new(Directive::Close(date, account))
+pub CloseExpression: Directive = {
+    <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Directive::Close(date, account)
 }
 
-pub CommodityExpression: Box<Directive> = {
+pub CommodityExpression: Directive = {
     <date: DateExpression> SPACE+ "commodity" SPACE+ <commodity: Commodity> SPACE*
-      <v:("\n  " SPACE* <AttributeKey> SPACE* ":" SPACE* <StringExpression>)*>
+      <v:("\n  " <CommodityLine>)*>
 
-      => Box::new(Directive::Commodity(date, commodity,  v.into_iter().collect()))
+      => Directive::Commodity(date, commodity,  v.into_iter().collect())
 }
+
+    CommodityLine: (String, String) = {
+         SPACE* <AttributeKey> SPACE* ":" SPACE* <StringExpression>
+    }
+
 
 pub TransactionExpression: Transaction = {
-    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <pn: PnExpression?> <tags: TagsExpression> <links: LinksExpression>
+    <date: DateExpression> SPACE+ <flag: FlagExpression> SPACE+ <options: TransactionHeadOptions>
     <v:("\n  " <TransactionLineExpression> )*>
 
     => {
         let lines = v.into_iter().map(|line|TransactionLine::from_parser(line.0, line.1, line.2)).collect();
-        Transaction::from_parser(date, flag, pn, tags, links, lines)
+        Transaction::from_parser(date, flag, options.0, options.1, options.2, lines)
     }
 }
+    TransactionHeadOptions: (Option<(String, Option<String>)>, Vec<String>, Vec<String>) = { <PnExpression?> <TagsExpression> <LinksExpression> }
+    PnExpression: (String, Option<String>) = {
+        <first: StringExpression> SPACE*  <second: NarrationExpression?> => (first, second)
+    }
+    NarrationExpression: String = { ("|" SPACE+)? <StringExpression> SPACE* }
+    TagsExpression: Vec<String> = { <TagExpression*> }
+    TagExpression: String = { "#" <AttributeKey> SPACE* }
+    LinksExpression: Vec<String> = { <LinkExpression*> }
+    LinkExpression: String = { "^" <AttributeKey> SPACE* }
 
-PnExpression: (String, Option<String>) = {
-    <first: StringExpression> SPACE*  <second: NarrationExpression?> => (first, second)
-}
-NarrationExpression: String = { ("|" SPACE+)? <StringExpression> SPACE* }
-TagsExpression: Vec<String> = { <TagExpression*> }
-TagExpression: String = { "#" <AttributeKey> SPACE* }
-LinksExpression: Vec<String> = { <LinkExpression*> }
-LinkExpression: String = { "^" <AttributeKey> SPACE* }
+    TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)>) = {
+        SPACE* <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
+    }
+    TLOptions:Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)> = {
+        (
+            SPACE+ <Amount> SPACE*
+            <CostWithComment?>
+            <SinglePrice?>
+            <TotalPrice?>
+        )?
+    }
 
+    CostWithComment: (Amount, Option<String>) = { "{" <Amount> SPACE* <Cost?> "}" SPACE* }
+    Cost: String = { "," SPACE* <StringExpression> SPACE* }
+    SinglePrice: Amount = { "@" SPACE* <Amount> SPACE* }
+    TotalPrice: Amount = { "@@" SPACE* <Amount> }
 
-pub TransactionLineExpression: (Option<Flag>, Account, Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)>) = {
-    SPACE* <(<FlagExpression> SPACE*)?> <AccountExpression> <TLOptions>
-}
-pub TLOptions:Option<(Amount, Option<(Amount, Option<String>)>, Option<Amount>, Option<Amount>)> = {
-    (
-        SPACE+ <Amount> SPACE*
-        <CostWithComment?>
-        <SinglePrice?>
-        <TotalPrice?>
-    )?
-}
-
-CostWithComment: (Amount, Option<String>) = { "{" <Amount> SPACE* <Cost?> "}" SPACE* }
-Cost: String = { "," SPACE* <StringExpression> SPACE* }
-SinglePrice: Amount = { "@" SPACE* <Amount> SPACE* }
-TotalPrice: Amount = { "@@" SPACE* <Amount> }
-
-pub PadExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Box::new(Directive::Pad(date, from, to))
-}
-
-pub BalanceExpression: Box<Directive> = {
-     <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Balance(date, account, amount))
+pub PadExpression: Directive = {
+    <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Directive::Pad(date, from, to)
 }
 
-
-pub DocumentExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Box::new(Directive::Document(date, account, note))
+pub BalanceExpression: Directive = {
+     <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Directive::Balance(date, account, amount)
 }
 
 
-pub PriceExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Box::new(Directive::Price(date, commodity, amount))
+pub DocumentExpression: Directive = {
+    <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Directive::Document(date, account, note)
 }
 
-pub EventExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Box::new(Directive::Event(date, name, description))
+
+pub PriceExpression: Directive = {
+    <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Directive::Price(date, commodity, amount)
 }
 
-pub CustomExpression: Box<Directive> = {
-    <date: DateExpression> SPACE+ "custom" SPACE+ <name: StringExpression> <config: (SPACE+ <CustomConfigItem>)+> => Box::new(Directive::Custom(name, config))
+pub EventExpression: Directive = {
+    <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Directive::Event(date, name, description)
+}
+
+pub CustomExpression: Directive = {
+    <date: DateExpression> SPACE+ "custom" SPACE+ <name: StringExpression> <config: (SPACE+ <CustomConfigItem>)+> => Directive::Custom(name, config)
 }
 
 pub CustomConfigItem: String = {
@@ -162,8 +166,8 @@ pub CustomConfigItem: String = {
 }
 
 
-pub CommentExpression: Box<Directive> = {
-    r";[^\n]*" => Box::new(Directive::Comment(<>.to_owned())),
+pub CommentExpression: Directive = {
+    r";[^\n]*" => Directive::Comment(<>.to_owned())
 }
 
 
