@@ -2,7 +2,7 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use indexmap::IndexMap;
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 use strum_macros::EnumString;
 
@@ -38,10 +38,24 @@ pub enum AccountType {
     Expenses,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, PartialOrd, Deserialize)]
 pub struct Account {
     account_type: AccountType,
     value: Vec<String>,
+}
+
+impl Serialize for Account {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!(
+            "{}{}{}",
+            self.account_type.to_string(),
+            if self.value.is_empty() { "" } else { ":" },
+            self.value.join(":")
+        ))
+    }
 }
 
 impl Account {
