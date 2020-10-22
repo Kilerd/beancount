@@ -42,3 +42,20 @@ fn escape_character(c: char) -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::utils::escape_with_quote;
+
+    #[test]
+    fn test_escapse_with_quote() {
+        assert_eq!(r#""a""#, escape_with_quote("a"));
+        assert_eq!(r#""a\"""#, escape_with_quote("a\""));
+        assert_eq!(r#""a\$""#, escape_with_quote("a$"));
+        assert_eq!(r#""a\\""#, escape_with_quote("a\\"));
+        assert_eq!(r#""a ""#, escape_with_quote("a "));
+        assert_eq!(r#""\`""#, escape_with_quote("`"));
+        assert_eq!(r#""\a\b\v\f\e""#, escape_with_quote("\u{07}\u{08}\u{0b}\u{0c}\u{1b}"));
+    }
+
+}
