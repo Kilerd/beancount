@@ -61,34 +61,34 @@ pub DirectiveExpression: Directive = {
 }
 
 pub OptionExpression:  Directive = {
-    "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Directive::Option(key, value)
+    "option" SPACE+ <key: StringExpression> SPACE+ <value: StringExpression> => Directive::Option{key, value}
 }
 
 pub PluginExpression:    Directive = {
-    "plugin" SPACE+ <module_name: StringExpression> <config: (SPACE+ <StringExpression>)?> => Directive::Plugin(module_name, config)
+    "plugin" SPACE+ <module: StringExpression> <value: (SPACE+ <StringExpression>)?> => Directive::Plugin{module, value}
 }
 
 pub IncludeExpression: Directive = {
-    "include" SPACE+ <file_path: StringExpression> => Directive::Include(file_path)
+    "include" SPACE+ <file: StringExpression> => Directive::Include{file}
 }
 
 pub OpenExpression: Directive = {
-    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Directive::Open(date, account, commodities)
+    <date: DateExpression> SPACE+ "open" SPACE+ <account: AccountExpression> <commodities: (SPACE+ <Comma<Commodity>>)?> SPACE*  => Directive::Open{date, account, commodities}
 }
 
 pub NoteExpression: Directive = {
-    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Directive::Note(date, account, note)
+    <date: DateExpression> SPACE+ "note" SPACE+ <account: AccountExpression> SPACE+ <description: StringExpression> SPACE* => Directive::Note{date, account, description}
 }
 
 pub CloseExpression: Directive = {
-    <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Directive::Close(date, account)
+    <date: DateExpression> SPACE+ "close" SPACE+ <account: AccountExpression> SPACE*  => Directive::Close{date, account}
 }
 
 pub CommodityExpression: Directive = {
-    <date: DateExpression> SPACE+ "commodity" SPACE+ <commodity: Commodity> SPACE*
+    <date: DateExpression> SPACE+ "commodity" SPACE+ <name: Commodity> SPACE*
       <v:("\n  " <CommodityLine>)*>
 
-      => Directive::Commodity(date, commodity,  v.into_iter().collect())
+      => Directive::Commodity{date, name,  metas:v.into_iter().collect()}
 }
 
     CommodityLine: (String, String) = {
@@ -133,29 +133,29 @@ pub TransactionExpression: Transaction = {
     TotalPrice: Amount = { "@@" SPACE* <Amount> }
 
 pub PadExpression: Directive = {
-    <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Directive::Pad(date, from, to)
+    <date: DateExpression> SPACE+ "pad" SPACE+ <from: AccountExpression> SPACE+ <to: AccountExpression> SPACE* => Directive::Pad{date, from, to}
 }
 
 pub BalanceExpression: Directive = {
-     <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Directive::Balance(date, account, amount)
+     <date: DateExpression> SPACE+ "balance" SPACE+ <account: AccountExpression> SPACE+ <amount: Amount> SPACE* => Directive::Balance{date, account, amount}
 }
 
 
 pub DocumentExpression: Directive = {
-    <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <note: StringExpression> SPACE* => Directive::Document(date, account, note)
+    <date: DateExpression> SPACE+ "document" SPACE+ <account: AccountExpression> SPACE+ <path: StringExpression> SPACE* => Directive::Document{date, account, path}
 }
 
 
 pub PriceExpression: Directive = {
-    <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Directive::Price(date, commodity, amount)
+    <date: DateExpression> SPACE+ "price" SPACE+ <commodity: Commodity> SPACE+ <amount: Amount> SPACE* => Directive::Price{date, commodity, amount}
 }
 
 pub EventExpression: Directive = {
-    <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <description: StringExpression> SPACE* => Directive::Event(date, name, description)
+    <date: DateExpression> SPACE+ "event" SPACE+ <name: StringExpression> SPACE+ <value: StringExpression> SPACE* => Directive::Event{date, name, value}
 }
 
 pub CustomExpression: Directive = {
-    <date: DateExpression> SPACE+ "custom" SPACE+ <name: StringExpression> <config: (SPACE+ <CustomConfigItem>)+> => Directive::Custom(name, config)
+    <date: DateExpression> SPACE+ "custom" SPACE+ <type_name: StringExpression> <values: (SPACE+ <CustomConfigItem>)+> => Directive::Custom{date, type_name, values}
 }
 
 pub CustomConfigItem: String = {
