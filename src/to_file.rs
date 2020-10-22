@@ -1,7 +1,8 @@
-use crate::models::{Amount, Directive, Flag};
+use crate::{
+    models::{Amount, Directive, Flag},
+    utils::escape_with_quote,
+};
 use itertools::Itertools;
-use crate::utils::escape_with_quote;
-
 
 pub trait ToBeancountFile {
     fn to_text(&self) -> String;
@@ -39,7 +40,7 @@ impl ToBeancountFile for crate::models::TransactionLine {
             builder.push_str(&format!(" {}", amount_inner.to_text()));
         };
         if let Some((amount, note)) = &self.cost {
-            builder.push_str("{ ");
+            builder.push_str(" { ");
             builder.push_str(&amount.to_text());
             if let Some(note_inner) = note {
                 builder.push_str(", ");
@@ -51,7 +52,7 @@ impl ToBeancountFile for crate::models::TransactionLine {
             builder.push_str(&format!(" @ {}", single.to_text()));
         };
         if let Some(inner) = &self.total_price {
-            builder.push_str(&format!(" @ {}", inner.to_text()));
+            builder.push_str(&format!(" @@ {}", inner.to_text()));
         };
         builder
     }
@@ -64,7 +65,11 @@ impl ToBeancountFile for crate::models::Transaction {
         builder.push_str(" ");
         builder.push_str(&self.flag.to_text());
         let pn = match (&self.payee, &self.narration) {
-            (Some(payee), Some(narration)) => format!(" {} {}", escape_with_quote(payee), escape_with_quote(narration)),
+            (Some(payee), Some(narration)) => format!(
+                " {} {}",
+                escape_with_quote(payee),
+                escape_with_quote(narration)
+            ),
             (None, Some(narration)) => format!(" {}", escape_with_quote(narration)),
             _ => format!(""),
         };
@@ -73,14 +78,14 @@ impl ToBeancountFile for crate::models::Transaction {
         let tags = self
             .tags
             .iter()
-            .map(|inner| format!("#{}", inner))
-            .join(" ");
+            .map(|inner| format!(" #{}", inner))
+            .join("");
         builder.push_str(&tags);
         let links = self
             .links
             .iter()
-            .map(|inner| format!("^{}", inner))
-            .join(" ");
+            .map(|inner| format!(" ^{}", inner))
+            .join("");
         builder.push_str(&links);
 
         let lines = self
@@ -122,7 +127,9 @@ impl ToBeancountFile for crate::models::Directive {
             Directive::Commodity { date, name, metas } => {
                 let meta_info = metas
                     .iter()
-                    .map(|(key, value)| format!("\n  {}: {}", key.clone(), escape_with_quote(value)))
+                    .map(|(key, value)| {
+                        format!("\n  {}: {}", key.clone(), escape_with_quote(value))
+                    })
                     .join("");
                 format!(
                     "{date} commodity {name}{meta_info}",
@@ -131,9 +138,7 @@ impl ToBeancountFile for crate::models::Directive {
                     meta_info = meta_info
                 )
             }
-            Directive::Transaction(model) => {
-                model.to_text()
-            },
+            Directive::Transaction(model) => model.to_text(),
             Directive::Balance {
                 date,
                 account,
@@ -196,7 +201,11 @@ impl ToBeancountFile for crate::models::Directive {
                 type_name = escape_with_quote(type_name),
                 value = values.iter().map(|v| escape_with_quote(v)).join(" ")
             ),
-            Directive::Option { key, value } => format!("option {} {}", escape_with_quote(key), escape_with_quote(value)),
+            Directive::Option { key, value } => format!(
+                "option {} {}",
+                escape_with_quote(key),
+                escape_with_quote(value)
+            ),
             Directive::Plugin { module, value } => {
                 let mut builder = format!("plugin {}", escape_with_quote(module),);
                 if let Some(inner) = value {
@@ -204,7 +213,7 @@ impl ToBeancountFile for crate::models::Directive {
                 }
                 builder
             }
-            Directive::Include { file } => format!("include {}", file),
+            Directive::Include { file } => format!("include {}", escape_with_quote(file)),
             Directive::Comment(comment) => comment.to_owned(),
         }
     }
@@ -212,40 +221,148 @@ impl ToBeancountFile for crate::models::Directive {
 
 #[cfg(test)]
 mod test {
-    use crate::models::{Account, AccountType, Directive};
-    use crate::to_file::ToBeancountFile;
-    use bigdecimal::BigDecimal;
-    use chrono::NaiveDate;
+    use crate::{models::Directive, parser::DirectiveExpressionParser, to_file::ToBeancountFile};
+
+    fn parse(from: &str) -> String {
+        let direct: Directive = DirectiveExpressionParser::new().parse(from).unwrap();
+        direct.to_text()
+    }
+
+    fn parse_and_test(from: &str) {
+        assert_eq!(from, parse(from));
+    }
 
     #[test]
     fn open_to_text() {
-        let directive = Directive::Open {
-            date: NaiveDate::from_ymd(1970, 1, 1),
-            account: Account::new(AccountType::Equity, vec!["hello".to_owned()]),
-            commodities: Some(vec!["CNY".to_owned()]),
-        };
-        let string = directive.to_text();
-        assert_eq!("1970-01-01 open Equity:hello CNY", string);
+        parse_and_test("1970-01-01 open Equity:hello CNY");
     }
 
     #[test]
     fn balance() {
-        let directive = Directive::Balance {
-            date: NaiveDate::from_ymd(1970, 1, 1),
-            account: Account::new(AccountType::Equity, vec!["hello".to_owned()]),
-            amount: (BigDecimal::from(10), "CNY".to_owned()),
-        };
-        assert_eq!(
-            "1970-01-01 balance Equity:hello 10 CNY",
-            directive.to_text()
-        )
+        parse_and_test("1970-01-01 balance Equity:hello 10 CNY");
     }
     #[test]
     fn option() {
-        let directive = Directive::Option { key: "hello".to_owned(), value: "value".to_string() };
+        parse_and_test("option \"hello\" \"value\"");
+    }
+    #[test]
+    fn close() {
+        parse_and_test("1970-01-01 close Equity:hello");
+    }
+
+    #[test]
+    fn commodity() {
+        parse_and_test("1970-01-01 commodity CNY");
+        parse_and_test("1970-01-01 commodity CNY\n  a: \"b\"");
+    }
+
+    #[test]
+    fn transaction() {
         assert_eq!(
-        "option \"hello\" \"value\"",
-        directive.to_text()
-        )
+            "1970-01-01 * \"Payee\" \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CNY",
+            parse(
+                r#"1970-01-01 * "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CNY"#
+            )
+        );
+
+        assert_eq!(
+            "1970-01-01 * \"Narration\"\n  Assets:123 -1 CNY { 0.1 USD, \"TEST\" }\n  Expenses:TestCategory:One 1 CNY { 0.1 USD }",
+            parse(r#"1970-01-01 * "Narration"
+                  Assets:123  -1 CNY {0.1 USD , "TEST"}
+                  Expenses:TestCategory:One 1 CNY {0.1 USD}"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 0.5 CNY\n  Expenses:TestCategory:Two 0.5 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 0.5 CNY
+                  Expenses:TestCategory:Two 0.5 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One",
+            parse(r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CCC @ 1 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @ 1 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\"\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CCC @@ 1 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration"
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Narration\" #mytag #tag2\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CCC @@ 1 CNY",
+            parse(r#"1970-01-01 *  "Narration" #mytag #tag2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\" #mytag #tag2\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CCC @@ 1 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration" #mytag #tag2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#)
+        );
+        assert_eq!(
+            "1970-01-01 * \"Payee\" \"Narration\" ^link1 ^link-2\n  Assets:123 -1 CNY\n  Expenses:TestCategory:One 1 CCC @@ 1 CNY",
+            parse(r#"1970-01-01 * "Payee" "Narration" ^link1 ^link-2
+                  Assets:123  -1 CNY
+                  Expenses:TestCategory:One 1 CCC @@ 1 CNY"#)
+        );
+    }
+    #[test]
+    fn pad() {
+        parse_and_test("1970-01-01 pad Assets:123:234:English:中文:日本語:한국어 Equity:ABC");
+    }
+    #[test]
+    fn note() {
+        parse_and_test(r#"1970-01-01 note Assets:123 "你 好 啊\\""#);
+    }
+    #[test]
+    fn document() {
+        parse_and_test("1970-01-01 document Assets:123 \"\"");
+        parse_and_test(r#"1970-01-01 document Assets:123 "here I am""#);
+    }
+
+    #[test]
+    fn price() {
+        parse_and_test(r#"1970-01-01 price USD 7 CNY"#);
+    }
+
+    #[test]
+    fn event() {
+        parse_and_test(r#"1970-01-01 event "location" "China""#);
+    }
+    #[test]
+    #[ignore]
+    fn custom() {
+        parse_and_test(r#"1970-01-01 custom "budget" Expenses:Eat "monthly" CNY"#);
+    }
+
+    #[test]
+    fn plugin() {
+        parse_and_test(r#"plugin "module name" "config data""#);
+        parse_and_test(r#"plugin "module name""#);
+    }
+    #[test]
+    fn include() {
+        parse_and_test(r#"include "file path""#);
+    }
+    #[test]
+    fn comment() {
+        parse_and_test(";你好啊");
     }
 }
