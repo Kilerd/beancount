@@ -9,6 +9,7 @@ use strum_macros::EnumString;
 pub type Amount = (BigDecimal, String);
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "type")]
 pub enum Directive {
     Open {
         date: NaiveDate,
