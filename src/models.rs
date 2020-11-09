@@ -1,3 +1,4 @@
+use crate::{error::BeanCountError, parser::AccountExpressionParser};
 use bigdecimal::BigDecimal;
 use chrono::NaiveDate;
 use indexmap::IndexMap;
@@ -5,8 +6,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 use strum_macros::EnumString;
-use crate::error::BeanCountError;
-use crate::parser::AccountExpressionParser;
 
 pub type Amount = (BigDecimal, String);
 
@@ -80,7 +79,7 @@ pub enum Directive {
 }
 
 #[derive(
-Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+    Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
 )]
 pub enum AccountType {
     Assets,
@@ -98,8 +97,8 @@ pub struct Account {
 
 impl Serialize for Account {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(&format!(
             "{}{}{}",
@@ -160,7 +159,7 @@ pub struct TransactionLine {
 }
 
 #[derive(
-EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+    EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
 )]
 pub enum Flag {
     #[strum(serialize = "*", to_string = "*")]
