@@ -4,4 +4,6 @@ use thiserror::Error;
 pub enum BeanCountError {
     #[error("date is invalid")]
     InvalidDate,
+    #[error("account is invalid")]
+    InvalidAccount,
 }

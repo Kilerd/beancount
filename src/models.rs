@@ -5,6 +5,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 use strum_macros::EnumString;
+use crate::error::BeanCountError;
+use crate::parser::AccountExpressionParser;
 
 pub type Amount = (BigDecimal, String);
 
@@ -78,7 +80,7 @@ pub enum Directive {
 }
 
 #[derive(
-    Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
 )]
 pub enum AccountType {
     Assets,
@@ -96,8 +98,8 @@ pub struct Account {
 
 impl Serialize for Account {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         serializer.serialize_str(&format!(
             "{}{}{}",
@@ -114,6 +116,24 @@ impl Account {
             account_type,
             value,
         }
+    }
+}
+
+///
+/// ```rust
+/// use beancount::models::Account;
+/// use std::str::FromStr;
+///
+/// assert!(Account::from_str("Assets:A:B").is_ok());
+/// assert!(Account::from_str("Assets").is_err());
+/// ```
+impl FromStr for Account {
+    type Err = BeanCountError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        AccountExpressionParser::new()
+            .parse(s)
+            .map_err(|_| BeanCountError::InvalidAccount)
     }
 }
 
@@ -140,7 +160,7 @@ pub struct TransactionLine {
 }
 
 #[derive(
-    EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
+EnumString, Debug, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize,
 )]
 pub enum Flag {
     #[strum(serialize = "*", to_string = "*")]
@@ -208,12 +228,14 @@ impl Transaction {
         }
     }
 }
+
 pub(crate) type AmountInfo = (
     Amount,
     Option<(Amount, Option<String>)>,
     Option<Amount>,
     Option<Amount>,
 );
+
 impl TransactionLine {
     pub(crate) fn from_parser(
         flag: Option<Flag>,
@@ -1117,7 +1139,6 @@ mod test {
     }
 
     mod comment {
-
         use crate::{models::Directive, parser::DirectiveExpressionParser};
 
         #[test]
@@ -1131,7 +1152,6 @@ mod test {
     }
 
     mod entry {
-
         use crate::{
             models::{Account, AccountType, Directive},
             parser::EntryParser,
