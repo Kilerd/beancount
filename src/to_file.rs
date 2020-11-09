@@ -214,7 +214,7 @@ impl ToBeancountFile for crate::models::Directive {
                 builder
             }
             Directive::Include { file } => format!("include {}", escape_with_quote(file)),
-            Directive::Comment(comment) => comment.to_owned(),
+            Directive::Comment { content } => content.to_owned(),
         }
     }
 }

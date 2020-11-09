@@ -72,7 +72,9 @@ pub enum Directive {
     Include {
         file: String,
     },
-    Comment(String),
+    Comment {
+        content: String,
+    },
 }
 
 #[derive(
@@ -1121,7 +1123,9 @@ mod test {
         #[test]
         fn comma() {
             let x = DirectiveExpressionParser::new().parse(";你好啊").unwrap();
-            let directive = Directive::Comment(";你好啊".to_owned());
+            let directive = Directive::Comment {
+                content: ";你好啊".to_owned(),
+            };
             assert_eq!(directive, x);
         }
     }
@@ -1141,7 +1145,9 @@ mod test {
             let entry = EntryParser::new().parse(&content).unwrap();
 
             let directives = vec![
-                Directive::Comment(";你好啊".to_owned()),
+                Directive::Comment {
+                    content: ";你好啊".to_owned(),
+                },
                 Directive::Open {
                     date: NaiveDate::from_ymd(1970, 1, 1),
                     account: Account {

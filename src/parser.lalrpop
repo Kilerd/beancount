@@ -167,7 +167,7 @@ pub CustomConfigItem: String = {
 
 
 pub CommentExpression: Directive = {
-    r";[^\n]*" => Directive::Comment(<>.to_owned())
+    r";[^\n]*" => Directive::Comment{content:<>.to_owned()}
 }
 
 
