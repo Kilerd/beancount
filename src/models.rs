@@ -125,6 +125,65 @@ impl Account {
             value,
         }
     }
+
+    /// assert whether account is Asset
+    /// ```rust
+    /// use beancount::models::{AccountType, Account};
+    /// assert!(Account::new(AccountType::Assets, vec![]).is_asset());
+    /// assert!(!Account::new(AccountType::Income, vec![]).is_asset());
+    /// assert!(!Account::new(AccountType::Expenses, vec![]).is_asset());
+    /// assert!(!Account::new(AccountType::Liabilities, vec![]).is_asset());
+    /// ```
+    pub fn is_asset(&self) -> bool {
+        self.is_account_type(AccountType::Assets)
+    }
+
+    /// assert whether account is Income
+    /// ```rust
+    /// use beancount::models::{AccountType, Account};
+    /// assert!(Account::new(AccountType::Income, vec![]).is_income());
+    /// assert!(!Account::new(AccountType::Assets, vec![]).is_income());
+    /// assert!(!Account::new(AccountType::Expenses, vec![]).is_income());
+    /// assert!(!Account::new(AccountType::Liabilities, vec![]).is_income());
+    /// ```
+    pub fn is_income(&self) -> bool {
+        self.is_account_type(AccountType::Income)
+    }
+
+    /// assert whether account is Expense
+    /// ```rust
+    /// use beancount::models::{AccountType, Account};
+    /// assert!(Account::new(AccountType::Expenses, vec![]).is_expense());
+    /// assert!(!Account::new(AccountType::Assets, vec![]).is_expense());
+    /// assert!(!Account::new(AccountType::Income, vec![]).is_expense());
+    /// assert!(!Account::new(AccountType::Liabilities, vec![]).is_expense());
+    /// ```
+    pub fn is_expense(&self) -> bool {
+        self.is_account_type(AccountType::Expenses)
+    }
+
+    /// assert whether account is Liability
+    /// ```rust
+    /// use beancount::models::{AccountType, Account};
+    /// assert!(Account::new(AccountType::Liabilities, vec![]).is_liability());
+    /// assert!(!Account::new(AccountType::Assets, vec![]).is_liability());
+    /// assert!(!Account::new(AccountType::Income, vec![]).is_liability());
+    /// assert!(!Account::new(AccountType::Expenses, vec![]).is_liability());
+    /// ```
+    pub fn is_liability(&self) -> bool {
+        self.is_account_type(AccountType::Liabilities)
+    }
+
+    /// check whether account is type or not
+    /// ```rust
+    /// use beancount::models::{AccountType, Account};
+    /// assert!(Account::new(AccountType::Assets, vec![]).is_account_type(AccountType::Assets));
+    /// assert!(!Account::new(AccountType::Assets, vec![]).is_account_type(AccountType::Income));
+    /// assert!(Account::new(AccountType::Income, vec![]).is_account_type(AccountType::Income));
+    /// ```
+    pub fn is_account_type(&self, atype: AccountType) -> bool {
+        self.account_type == atype
+    }
 }
 
 ///
