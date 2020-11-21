@@ -79,7 +79,16 @@ pub enum Directive {
 }
 
 #[derive(
-    Debug, EnumString, PartialEq, PartialOrd, strum_macros::ToString, Deserialize, Serialize, Clone,
+    Debug,
+    EnumString,
+    PartialEq,
+    PartialOrd,
+    strum_macros::ToString,
+    Deserialize,
+    Serialize,
+    Clone,
+    Eq,
+    Hash,
 )]
 pub enum AccountType {
     Assets,
@@ -89,7 +98,7 @@ pub enum AccountType {
     Expenses,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Deserialize, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Deserialize, Clone, Eq, Hash)]
 pub struct Account {
     account_type: AccountType,
     value: Vec<String>,
